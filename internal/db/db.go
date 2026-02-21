@@ -15,16 +15,16 @@ const bucketImages = "images"
 type ImageMeta struct {
 	RepoTags    string   `json:"repo_tags"`
 	DisplayName string   `json:"display_name"`
+	Labels      string   `json:"labels"`
+	Layers      []string `json:"layers"`
 	Size        int64    `json:"size"`
 	CreatedTs   int64    `json:"created_ts"`
 	LastUsedTs  int64    `json:"last_used_ts"`
-	Labels      string   `json:"labels"`
-	Layers      []string `json:"layers"`
 }
 
 type DB struct {
-	path string
 	db   *bolt.DB
+	path string
 	mu   sync.Mutex
 }
 

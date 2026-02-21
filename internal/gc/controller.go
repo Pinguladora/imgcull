@@ -14,15 +14,15 @@ import (
 // Controller implements the GC loop and uses a runtime.Adapter and a db.DB.
 type Controller struct {
 	runtime         runtime.Adapter
+	ctx             context.Context
 	db              *db.DB
+	keepLabel       string
 	maxUnused       int64
 	pollInterval    time.Duration
-	keepLabel       string
-	dry             bool
 	minAge          time.Duration
 	deletionChunk   int
 	deletionSleepMs int
-	ctx             context.Context
+	dry             bool
 }
 
 // NewController constructs a Controller.
@@ -152,10 +152,10 @@ func (c *Controller) reconcile() {
 	// build candidate list (exclude in-use and keep-labeled)
 	type cand struct {
 		id      string
-		size    int64
-		last    int64
 		display string
 		labels  string
+		size    int64
+		last    int64
 	}
 	cands := []cand{}
 	for id, m := range allMeta {
