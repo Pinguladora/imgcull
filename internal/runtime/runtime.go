@@ -17,10 +17,10 @@ type Container struct {
 
 // InspectResult includes created timestamp, labels and layers (when available).
 type InspectResult struct {
-	ID        string
-	CreatedAt int64
 	Labels    map[string]string
+	ID        string
 	Layers    []string
+	CreatedAt int64
 }
 
 // Adapter is the runtime abstraction.
