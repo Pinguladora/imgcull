@@ -1,0 +1,121 @@
+version: "2"
+run:
+  tests: true
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - dogsled
+    - durationcheck
+    - errcheck
+    - errname
+    - fatcontext
+    - forcetypeassert
+    - gochecknoinits
+    - goconst
+    - godox
+    - gosec
+    - govet
+    - ineffassign
+    - interfacebloat
+    - musttag
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - predeclared
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - usetesting
+    - whitespace
+    - wrapcheck
+  settings:
+    govet:
+      enable:
+        - fieldalignment
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    godox:
+      keywords:
+        - TODO
+        - BUG
+        - FIXME
+        - OPTIMIZE
+        - HACK
+    interfacebloat:
+      max: 5
+    nolintlint:
+      require-explanation: false
+      require-specific: true
+      allow-unused: false
+    revive:
+      max-open-files: 2048
+      confidence: 0.8
+      severity: warning
+      enable-all-rules: false
+      rules:
+        - name: context-as-argument
+          severity: warning
+          disabled: false
+        - name: defer
+          severity: warning
+          disabled: false
+        - name: unexported-return
+          severity: warning
+          disabled: false
+        - name: exported
+          arguments:
+            - checkPrivateReceivers
+            - sayRepetitiveInsteadOfStutters
+          severity: warning
+          disabled: false
+    rowserrcheck:
+      packages:
+        - github.com/jmoiron/sqlx
+    usetesting:
+      os-mkdir-temp: true
+      os-setenv: true
+      os-temp-dir: true
+      os-create-temp: true
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - goconst
+        path: (.+)_test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/mrwormhole/laverna)
+      custom-order: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
