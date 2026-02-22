@@ -1,0 +1,33 @@
+[tools]
+"aqua:golangci-lint" = "2.10.1"
+"aqua:goreleaser" = "2.14.0"
+"aqua:syft" = "1.42.1"
+"aqua:upx" = "5.1.0"
+"aqua:watchexec" = "2.3.3"
+go = "1.26.0"
+
+[env]
+TIRIRTH = "0"
+
+[tasks."lint:golangci-lint"]
+description = "Lint using golangci with autofix"
+run = "golangci-lint run ./... --fix"
+sources = ["**/*.go"]
+
+[tasks.lint]
+description = "Runs all linting"
+depends = ["lint:*"]
+
+[tasks.build]
+description = "Local build (without goreleaser)"
+run = "go build ./cmd/imgcull"
+alias = "b"
+
+[tasks.snapshot]
+description = "Local snapshot build (skips signing and SBOM)"
+run = "goreleaser release --snapshot --clean --skip=sign,sbom"
+alias = "snap"
+
+[tasks.release]
+description = "Production release"
+run = "goreleaser release --clean"
