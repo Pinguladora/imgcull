@@ -4,40 +4,59 @@
 version: "2"
 run:
   tests: true
+  go: "1.26"
+  concurrency: 4
+  timeout: 10m
+
 linters:
   default: none
   enable:
+    - asciicheck
+    - bidichk
     - bodyclose
     - containedctx
     - contextcheck
+    - cyclop
     - dogsled
+    - dupl
+    - dupword
     - durationcheck
     - errcheck
     - errname
+    - exptostd
     - fatcontext
     - forcetypeassert
+    - funlen
     - gochecknoinits
+    - gocritic
+    - gocognit
     - goconst
+    - godoclint
+    - godot
     - godox
     - gosec
     - govet
     - ineffassign
     - interfacebloat
+    - intrange
+    - lll
+    - mnd
+    - modernize
     - musttag
     - nilerr
     - nilnil
     - noctx
     - nolintlint
+    - perfsprint
+    - prealloc
     - predeclared
     - recvcheck
     - revive
     - rowserrcheck
-    - sloglint
     - spancheck
-    - sqlclosecheck
     - staticcheck
+    - tagalign
     - thelper
-    - tparallel
     - unconvert
     - unparam
     - unused
@@ -45,6 +64,7 @@ linters:
     - usetesting
     - whitespace
     - wrapcheck
+    - zerologlint
   settings:
     govet:
       enable:
@@ -65,6 +85,17 @@ linters:
       require-explanation: false
       require-specific: true
       allow-unused: false
+    perfsprint:
+      # Optimizes even if it requires an int or uint type cast.
+      int-conversion: true
+      # Optimizes into `err.Error()` even if it is only equivalent for non-nil errors.
+      err-error: true
+      # Optimizes `fmt.Errorf`.
+      errorf: true
+      # Optimizes `fmt.Sprintf` with only one argument.
+      sprintf1: true
+      # Optimizes into strings concatenation.
+      strconcat: true
     revive:
       max-open-files: 2048
       confidence: 0.8
@@ -107,14 +138,14 @@ linters:
 formatters:
   enable:
     - gci
-    - gofmt
+    - gofumpt
     - goimports
   settings:
     gci:
       sections:
         - standard
         - default
-        - prefix(github.com/mrwormhole/laverna)
+        - prefix(github.com/pinguladora/imgcull)
       custom-order: true
   exclusions:
     generated: lax
@@ -122,3 +153,10 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+issues:
+  # all issues
+  new: false
+  # make `golangci-lint` fail fast in CI when issues found
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  uniq-by-line: false
