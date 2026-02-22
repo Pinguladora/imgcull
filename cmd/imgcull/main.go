@@ -29,11 +29,11 @@ const (
 	defaultDbPath            = "imgcull.db"
 	defaultDeletionChunkSize = 10
 	defaultDeletionSleepMs   = 200
-	defaultKeepLabel         = "keep"
+	defaultKeepLabel         = "imgcull-keep"
 	defaultDryRun            = false
 	defaultMaxUnused         = "20G"
-	defaultMinAgeHours       = 1
-	defaultRuntime           = "podman"
+	defaultMinAgeHours       = 24
+	defaultRuntime           = "docker"
 	defaultPollIntervalSec   = 60
 )
 
@@ -105,9 +105,9 @@ func main() {
 
 func run() error {
 	runtimeFlag := flag.String("runtime", defaultRuntime, "runtime to use: podman|docker|nerdctl")
-	maxUnused := flag.String("max-unused-bytes", defaultMaxUnused, "max allowed unused image bytes before GC (eg 20G)")
+	maxUnused := flag.String("max-unused-bytes", defaultMaxUnused, "max allowed unused image bytes before GC (eg. 20G)")
 	poll := flag.Int("poll-interval", defaultPollIntervalSec, "seconds between reconciliation runs")
-	dbPath := flag.String("db-path", defaultDbPath, "path to bolt DB")
+	dbPath := flag.String("db-path", fmt.Sprintf("%s_defaultDbPath", defaultRuntime), "path to bolt DB (eg. docker_imgcull.db)")
 	keepLabel := flag.String("keep-label", defaultKeepLabel, "label name that prevents deletion")
 	dry := flag.Bool("dry-run", defaultDryRun, "don't actually delete images")
 	minAge := flag.Int("min-age-hours", defaultMinAgeHours, "min image age before deletion (hours)")
