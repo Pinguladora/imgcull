@@ -4,8 +4,7 @@ project_name: imgcull
 
 before:
   hooks:
-    # You may remove this if you don't use go modules.
-    - go mod tidy
+    - go mod download # Ensures dependencies are fetched before build starts
 
 builds:
   - id: production
@@ -50,9 +49,7 @@ builds:
     flags:
       - -tags=dev
     ldflags:
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.CommitDate}} # Use CommitDate, NOT current time
+      - -X main.version={{.Version}}-dev
       - -extldflags="-static"
     goos:
       - linux
@@ -65,7 +62,7 @@ builds:
       - goos: windows
         goarch: arm64
     # only runs on snapshot builds
-    skip: "{{ not.IsSnapshot }}"
+    skip: "{{ not .IsSnapshot }}"
 
 report_sizes: true
 
@@ -79,6 +76,7 @@ upx:
 
 gomod:
   proxy: true # Ensures dependencies are fetched from the proxy (Verifiable builds https://goreleaser.com/customization/verifiable_builds/)
+  mod: readonly # Prevents accidental changes to go.mod/go.sum during build (before Go 1.26 behavior)
 
 archives:
   - formats: [tar.gz]
