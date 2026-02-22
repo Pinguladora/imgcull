@@ -1,65 +1,23 @@
 package runtime
 
-import (
-	"context"
-	"fmt"
-)
+import "context"
 
-// PodmanAdapter is a thin wrapper around the `podman` CLI.
-type PodmanAdapter struct{}
+type PodmanAdapter struct {
+	base baseCLI
+}
 
-// NewPodmanAdapter constructs a PodmanAdapter.
-func NewPodmanAdapter() *PodmanAdapter { return &PodmanAdapter{} }
+func NewPodmanAdapter() *PodmanAdapter {
+	return &PodmanAdapter{base: "podman"}
+}
 
-// ListImages returns all images from Podman runtime.
 func (a *PodmanAdapter) ListImages(ctx context.Context) ([]Image, error) {
-	out, err := runCLI(ctx, "podman", "images", "--format", "json")
-	if err != nil {
-		return nil, err
-	}
-	parsed, err := parseJSONList(out)
-	if err != nil {
-		return nil, err
-	}
-	res := make([]Image, 0, len(parsed))
-	for _, m := range parsed {
-		id := toString(m["Id"])
-		if id == "" {
-			id = toString(m["ID"])
-		}
-		tags := unmarshalRepoTags(m["RepoTags"])
-		size := toInt64(m["Size"])
-		res = append(res, Image{ID: id, RepoTags: tags, Size: size})
-	}
-	return res, nil
+	return a.base.listImages(ctx)
 }
 
-// ListContainers returns all containers (including stopped ones) from Podman runtime.
 func (a *PodmanAdapter) ListContainers(ctx context.Context) ([]Container, error) {
-	out, err := runCLI(ctx, "podman", "ps", "-a", "--format", "json")
-	if err != nil {
-		return nil, err
-	}
-	parsed, err := parseJSONList(out)
-	if err != nil {
-		return nil, err
-	}
-	res := make([]Container, 0, len(parsed))
-	for _, m := range parsed {
-		id := toString(m["Id"])
-		if id == "" {
-			id = toString(m["ID"])
-		}
-		img := toString(m["ImageID"])
-		if img == "" {
-			img = toString(m["Image"])
-		}
-		res = append(res, Container{ID: id, ImageID: img})
-	}
-	return res, nil
+	return a.base.listContainers(ctx)
 }
 
-// InspectImage returns detailed info about the given image ID from Podman runtime.
 func (a *PodmanAdapter) InspectImage(ctx context.Context, imageID string) (InspectResult, error) {
 	out, err := runCLI(ctx, "podman", "image", "inspect", imageID)
 	if err != nil {
@@ -70,37 +28,30 @@ func (a *PodmanAdapter) InspectImage(ctx context.Context, imageID string) (Inspe
 		return InspectResult{}, err
 	}
 	if len(parsed) == 0 {
-		return InspectResult{}, fmt.Errorf("empty inspect for %s", imageID)
+		return InspectResult{}, newEmptyInspectError(imageID)
 	}
-	obj := parsed[0]
+	return parsePodmanInspectResult(imageID, parsed[0])
+}
 
+func (a *PodmanAdapter) RemoveImage(ctx context.Context, imageID string) error {
+	return a.base.removeImage(ctx, imageID)
+}
+
+func parsePodmanInspectResult(imageID string, obj map[string]any) (InspectResult, error) {
 	created := parseTimeRFC3339(toString(obj["Created"]))
-	labels := map[string]string{}
+	labels := extractLabels(obj)
+	layers := extractLayers(obj)
+	layers = append(layers, extractGraphDriverLayers(obj)...)
+	return InspectResult{
+		ID:        imageID,
+		CreatedAt: created,
+		Labels:    labels,
+		Layers:    layers,
+	}, nil
+}
 
-	// Config.Labels
-	if cfg, ok := obj["Config"].(map[string]any); ok {
-		if ll, ok := cfg["Labels"].(map[string]any); ok {
-			for k, v := range ll {
-				labels[k] = toString(v)
-			}
-		}
-	}
-	// top-level Labels (some versions)
-	if ll, ok := obj["Labels"].(map[string]any); ok {
-		for k, v := range ll {
-			labels[k] = toString(v)
-		}
-	}
-
-	// Layer IDs from RootFS.Layers or GraphDriver.Data.Layers
-	layers := []string{}
-	if rf, ok := obj["RootFS"].(map[string]any); ok {
-		if ll, ok := rf["Layers"].([]any); ok {
-			for _, v := range ll {
-				layers = append(layers, toString(v))
-			}
-		}
-	}
+func extractGraphDriverLayers(obj map[string]any) []string {
+	var layers []string
 	if gd, ok := obj["GraphDriver"].(map[string]any); ok {
 		if data, ok := gd["Data"].(map[string]any); ok {
 			if ll, ok := data["Layers"].([]any); ok {
@@ -110,17 +61,17 @@ func (a *PodmanAdapter) InspectImage(ctx context.Context, imageID string) (Inspe
 			}
 		}
 	}
-
-	return InspectResult{
-		ID:        imageID,
-		CreatedAt: created,
-		Labels:    labels,
-		Layers:    layers,
-	}, nil
+	return layers
 }
 
-// RemoveImage removes the given image ID from Podman runtime.
-func (a *PodmanAdapter) RemoveImage(ctx context.Context, imageID string) error {
-	_, err := runCLI(ctx, "podman", "rmi", imageID)
-	return err
+func newEmptyInspectError(imageID string) error {
+	return &emptyInspectError{imageID: imageID}
+}
+
+type emptyInspectError struct {
+	imageID string
+}
+
+func (e *emptyInspectError) Error() string {
+	return "empty inspect for " + e.imageID
 }

@@ -20,6 +20,23 @@ import (
 	"github.com/pinguladora/imgcull/internal/runtime"
 )
 
+const (
+	KiB = 1024
+	MiB = 1024 * KiB
+	GiB = 1024 * MiB
+	TiB = 1024 * GiB
+
+	defaultDbPath            = "imgcull.db"
+	defaultDeletionChunkSize = 10
+	defaultDeletionSleepMs   = 200
+	defaultKeepLabel         = "keep"
+	defaultDryRun            = false
+	defaultMaxUnused         = "20G"
+	defaultMinAgeHours       = 1
+	defaultRuntime           = "podman"
+	defaultPollIntervalSec   = 60
+)
+
 func initLogger() {
 	zerolog.TimeFieldFormat = time.RFC3339
 	if os.Getenv("PLAIN_LOG") == "1" {
@@ -30,46 +47,19 @@ func initLogger() {
 	log.Logger = log.With().Str("component", "imgcull").Logger()
 }
 
-const (
-	KiB = 1024
-	MiB = 1024 * KiB
-	GiB = 1024 * MiB
-	TiB = 1024 * GiB
-)
-
-// parseHumanSize parses sizes like "20G", "512M", "1.5G", "1024" and returns bytes.
 func parseHumanSize(size string) (int64, error) {
 	if size == "" {
 		return 0, errors.New("empty size")
 	}
 	t := strings.TrimSpace(strings.ToUpper(size))
 
-	// handle pure integer (no suffix)
-	// but also allow floats with suffix (e.g. 1.5G)
-	var multiplier int64 = 1
-	last := t[len(t)-1]
-
-	switch last {
-	case 'K':
-		multiplier = KiB
-		t = strings.TrimSpace(t[:len(t)-1])
-	case 'M':
-		multiplier = MiB
-		t = strings.TrimSpace(t[:len(t)-1])
-	case 'G':
-		multiplier = GiB
-		t = strings.TrimSpace(t[:len(t)-1])
-	case 'T':
-		multiplier = TiB
-		t = strings.TrimSpace(t[:len(t)-1])
-	default:
-		// keep multiplier = 1 and t unchanged
+	multiplier, suffixLen := parseSizeMultiplier(t)
+	if suffixLen > 0 {
+		t = strings.TrimSpace(t[:len(t)-suffixLen])
 	}
 
-	// parse numeric part (allow integers and floats)
 	v, err := strconv.ParseFloat(t, 64)
 	if err != nil {
-		// if the string contained no suffix and is an integer-like string, try ParseInt
 		if multiplier == 1 {
 			if i, err2 := strconv.ParseInt(t, 10, 64); err2 == nil {
 				return i, nil
@@ -78,7 +68,6 @@ func parseHumanSize(size string) (int64, error) {
 		return 0, fmt.Errorf("invalid size %q: %w", size, err)
 	}
 
-	// compute bytes and guard overflow
 	bytes := int64(v * float64(multiplier))
 	if bytes < 0 {
 		return 0, fmt.Errorf("size overflow for %q", size)
@@ -86,51 +75,73 @@ func parseHumanSize(size string) (int64, error) {
 	return bytes, nil
 }
 
+func parseSizeMultiplier(t string) (int64, int) {
+	if len(t) == 0 {
+		return 1, 0
+	}
+	last := t[len(t)-1]
+	switch last {
+	case 'K':
+		return KiB, 1
+	case 'M':
+		return MiB, 1
+	case 'G':
+		return GiB, 1
+	case 'T':
+		return TiB, 1
+	default:
+		return 1, 0
+	}
+}
+
 func main() {
 	initLogger()
 
-	runtimeFlag := flag.String("runtime", "podman", "runtime to use: podman|docker|nerdctl")
-	maxUnused := flag.String("max-unused-bytes", "20G", "max allowed unused image bytes before GC (eg 20G)")
-	poll := flag.Int("poll-interval", 60, "seconds between reconciliation runs")
-	dbPath := flag.String("db-path", "imgcull.db", "path to bolt DB")
-	keepLabel := flag.String("keep-label", "keep", "label name that prevents deletion")
-	dry := flag.Bool("dry-run", false, "don't actually delete images")
-	minAge := flag.Int("min-age-hours", 1, "min image age before deletion (hours)")
-	chunkSize := flag.Int("deletion-chunk-size", 10, "max images to delete per reconcile run")
-	sleepMs := flag.Int("deletion-sleep-ms", 200, "ms to sleep between deletions")
+	if err := run(); err != nil {
+		log.Error().Err(err).Msg("fatal error")
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	runtimeFlag := flag.String("runtime", defaultRuntime, "runtime to use: podman|docker|nerdctl")
+	maxUnused := flag.String("max-unused-bytes", defaultMaxUnused, "max allowed unused image bytes before GC (eg 20G)")
+	poll := flag.Int("poll-interval", defaultPollIntervalSec, "seconds between reconciliation runs")
+	dbPath := flag.String("db-path", defaultDbPath, "path to bolt DB")
+	keepLabel := flag.String("keep-label", defaultKeepLabel, "label name that prevents deletion")
+	dry := flag.Bool("dry-run", defaultDryRun, "don't actually delete images")
+	minAge := flag.Int("min-age-hours", defaultMinAgeHours, "min image age before deletion (hours)")
+	chunkSize := flag.Int("deletion-chunk-size", defaultDeletionChunkSize, "max images to delete per reconcile run")
+	sleepMs := flag.Int("deletion-sleep-ms", defaultDeletionSleepMs, "ms to sleep between deletions")
 	flag.Parse()
 
 	mu, err := parseHumanSize(*maxUnused)
 	if err != nil {
-		log.Fatal().Err(err).Msg("invalid max-unused-bytes")
+		return fmt.Errorf("invalid max-unused-bytes: %w", err)
 	}
 
 	database, err := db.Open(*dbPath)
 	if err != nil {
-		log.Fatal().Err(err).Msg("open db")
+		return fmt.Errorf("open db: %w", err)
 	}
-	defer database.Close()
+	defer func() {
+		if err := database.Close(); err != nil {
+			log.Error().Err(err).Msg("close db")
+		}
+	}()
 
-	var adapter runtime.Adapter
-	switch *runtimeFlag {
-	case "podman":
-		adapter = runtime.NewPodmanAdapter()
-	case "docker":
-		adapter = runtime.NewDockerAdapter()
-	case "nerdctl":
-		adapter = runtime.NewNerdctlAdapter()
-	default:
-		log.Fatal().Msgf("unsupported runtime: %s", *runtimeFlag)
+	adapter, ok := getAdapter(*runtimeFlag)
+	if !ok {
+		return fmt.Errorf("unsupported runtime: %s", *runtimeFlag)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	ctrl := gc.NewController(ctx, adapter, database, mu, *poll, *keepLabel, *dry, *minAge, *chunkSize, *sleepMs)
 
-	if err := ctrl.Seed(); err != nil {
+	if err := ctrl.Seed(ctx); err != nil {
 		log.Error().Err(err).Msg("seed failed")
 	}
 
-	// graceful shutdown
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -138,5 +149,19 @@ func main() {
 		cancel()
 	}()
 
-	ctrl.RunLoop()
+	ctrl.RunLoop(ctx)
+	return nil
+}
+
+func getAdapter(name string) (runtime.Adapter, bool) {
+	switch name {
+	case "podman":
+		return runtime.NewPodmanAdapter(), true
+	case "docker":
+		return runtime.NewDockerAdapter(), true
+	case "nerdctl":
+		return runtime.NewNerdctlAdapter(), true
+	default:
+		return nil, false
+	}
 }

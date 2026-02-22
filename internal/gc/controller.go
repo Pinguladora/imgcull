@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"time"
 
@@ -13,10 +14,16 @@ import (
 	"github.com/pinguladora/imgcull/internal/runtime"
 )
 
-// Controller implements the GC loop and uses a runtime.Adapter and a db.DB.
+type candidate struct {
+	id      string
+	display string
+	labels  string
+	size    int64
+	last    int64
+}
+
 type Controller struct {
 	runtime         runtime.Adapter
-	ctx             context.Context
 	db              *db.DB
 	keepLabel       string
 	maxUnused       int64
@@ -27,9 +34,17 @@ type Controller struct {
 	dry             bool
 }
 
-// NewController constructs a Controller.
-func NewController(ctx context.Context, rt runtime.Adapter, database *db.DB, maxUnused int64,
-	pollSec int, keepLabel string, dry bool, minAgeHours int, chunk int, sleep int,
+func NewController(
+	ctx context.Context,
+	rt runtime.Adapter,
+	database *db.DB,
+	maxUnused int64,
+	pollSec int,
+	keepLabel string,
+	dry bool,
+	minAgeHours int,
+	chunk int,
+	sleep int,
 ) *Controller {
 	return &Controller{
 		runtime:         rt,
@@ -41,19 +56,17 @@ func NewController(ctx context.Context, rt runtime.Adapter, database *db.DB, max
 		minAge:          time.Duration(minAgeHours) * time.Hour,
 		deletionChunk:   chunk,
 		deletionSleepMs: sleep,
-		ctx:             ctx,
 	}
 }
 
-// Seed populates the DB from the runtime's current images and containers.
-func (c *Controller) Seed() error {
+func (c *Controller) Seed(ctx context.Context) error {
 	log.Info().Msg("seeding DB from runtime images")
-	imgs, err := c.runtime.ListImages(c.ctx)
+	imgs, err := c.runtime.ListImages(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("list images failed")
 		return fmt.Errorf("list images: %w", err)
 	}
-	containers, _ := c.runtime.ListContainers(c.ctx)
+	containers, _ := c.runtime.ListContainers(ctx)
 	used := map[string]struct{}{}
 	for _, ct := range containers {
 		if ct.ImageID != "" {
@@ -62,7 +75,7 @@ func (c *Controller) Seed() error {
 	}
 
 	for _, img := range imgs {
-		ins, _ := c.runtime.InspectImage(c.ctx, img.ID)
+		ins, _ := c.runtime.InspectImage(ctx, img.ID)
 		display := "<none>"
 		if len(img.RepoTags) > 0 && img.RepoTags[0] != "" {
 			display = img.RepoTags[0]
@@ -89,47 +102,29 @@ func (c *Controller) Seed() error {
 	return nil
 }
 
-// RunLoop starts the reconcile ticker and blocks until context cancellation.
-func (c *Controller) RunLoop() {
+func (c *Controller) RunLoop(ctx context.Context) {
 	ticker := time.NewTicker(c.pollInterval)
 	defer ticker.Stop()
 	for {
 		select {
-		case <-c.ctx.Done():
+		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			c.reconcile()
+			c.reconcile(ctx)
 		}
 	}
 }
 
-// reconcile performs one GC reconciliation pass.
-func (c *Controller) reconcile() {
+func (c *Controller) reconcile(ctx context.Context) {
 	log.Info().Msg("reconcile start")
 
-	// get runtime state
-	imgs, err := c.runtime.ListImages(c.ctx)
+	imgs, containers, err := c.fetchRuntimeState(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("list images failed")
 		return
 	}
-	containers, _ := c.runtime.ListContainers(c.ctx)
-	used := map[string]struct{}{}
-	for _, ct := range containers {
-		if ct.ImageID != "" {
-			used[ct.ImageID] = struct{}{}
-		}
-	}
+	used := buildUsedSet(containers)
 
-	// compute unused bytes from runtime listing
-	imageSizes := map[string]int64{}
-	unusedTotal := int64(0)
-	for _, img := range imgs {
-		imageSizes[img.ID] = img.Size
-		if _, ok := used[img.ID]; !ok {
-			unusedTotal += img.Size
-		}
-	}
+	imageSizes, unusedTotal := c.computeUnused(imgs, used)
 	log.Info().Int64("unused_bytes", unusedTotal).Msg("unused computed")
 	if unusedTotal <= c.maxUnused {
 		return
@@ -141,7 +136,50 @@ func (c *Controller) reconcile() {
 		return
 	}
 
-	// build layer refcounts and per-image layer lists
+	layerRef, imgLayers := buildLayerMaps(allMeta)
+	cands := c.buildCandidates(allMeta, used)
+	sort.Slice(cands, func(i, j int) bool { return cands[i].last < cands[j].last })
+
+	ordered := partitionByUniqueLayers(cands, imgLayers, layerRef)
+
+	c.performDeletions(ctx, ordered, imageSizes, allMeta, unusedTotal)
+
+	log.Info().Msg("reconcile finished")
+}
+
+func (c *Controller) fetchRuntimeState(ctx context.Context) ([]runtime.Image, []runtime.Container, error) {
+	imgs, err := c.runtime.ListImages(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("list images failed")
+		return nil, nil, fmt.Errorf("list images: %w", err)
+	}
+	containers, _ := c.runtime.ListContainers(ctx)
+	return imgs, containers, nil
+}
+
+func buildUsedSet(containers []runtime.Container) map[string]struct{} {
+	used := map[string]struct{}{}
+	for _, ct := range containers {
+		if ct.ImageID != "" {
+			used[ct.ImageID] = struct{}{}
+		}
+	}
+	return used
+}
+
+func (c *Controller) computeUnused(imgs []runtime.Image, used map[string]struct{}) (map[string]int64, int64) {
+	imageSizes := map[string]int64{}
+	unusedTotal := int64(0)
+	for _, img := range imgs {
+		imageSizes[img.ID] = img.Size
+		if _, ok := used[img.ID]; !ok {
+			unusedTotal += img.Size
+		}
+	}
+	return imageSizes, unusedTotal
+}
+
+func buildLayerMaps(allMeta map[string]db.ImageMeta) (map[string]int, map[string][]string) {
 	layerRef := map[string]int{}
 	imgLayers := map[string][]string{}
 	for id, m := range allMeta {
@@ -150,19 +188,14 @@ func (c *Controller) reconcile() {
 		}
 		imgLayers[id] = m.Layers
 		for _, l := range m.Layers {
-			layerRef[l] = layerRef[l] + 1
+			layerRef[l]++
 		}
 	}
+	return layerRef, imgLayers
+}
 
-	// build candidate list (exclude in-use and keep-labeled)
-	type cand struct {
-		id      string
-		display string
-		labels  string
-		size    int64
-		last    int64
-	}
-	cands := []cand{}
+func (c *Controller) buildCandidates(allMeta map[string]db.ImageMeta, used map[string]struct{}) []candidate {
+	var cands []candidate
 	for id, m := range allMeta {
 		if _, inUse := used[id]; inUse {
 			continue
@@ -170,7 +203,7 @@ func (c *Controller) reconcile() {
 		if c.keepLabel != "" && hasKeepLabel(m.Labels, c.keepLabel) {
 			continue
 		}
-		cands = append(cands, cand{
+		cands = append(cands, candidate{
 			id:      id,
 			size:    m.Size,
 			last:    m.LastUsedTs,
@@ -178,29 +211,38 @@ func (c *Controller) reconcile() {
 			labels:  m.Labels,
 		})
 	}
-	// LRU order
-	sort.Slice(cands, func(i, j int) bool { return cands[i].last < cands[j].last })
+	return cands
+}
 
-	// partition leaves (images with at least one unique layer) first
-	leaves := []cand{}
-	nonLeaves := []cand{}
+func partitionByUniqueLayers(cands []candidate, imgLayers map[string][]string, layerRef map[string]int) []candidate {
+	var leaves, nonLeaves []candidate
 	for _, x := range cands {
-		unique := false
-		for _, l := range imgLayers[x.id] {
-			if layerRef[l] == 1 {
-				unique = true
-				break
-			}
-		}
-		if unique {
+		hasUnique := hasUniqueLayer(imgLayers[x.id], layerRef)
+		if hasUnique {
 			leaves = append(leaves, x)
 		} else {
 			nonLeaves = append(nonLeaves, x)
 		}
 	}
-	ordered := append(leaves, nonLeaves...)
+	return slices.Concat(leaves, nonLeaves)
+}
 
-	// delete up to deletionChunk images (or until threshold satisfied)
+func hasUniqueLayer(layers []string, layerRef map[string]int) bool {
+	for _, l := range layers {
+		if layerRef[l] == 1 {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Controller) performDeletions(
+	ctx context.Context,
+	ordered []candidate,
+	imageSizes map[string]int64,
+	allMeta map[string]db.ImageMeta,
+	unusedTotal int64,
+) {
 	deleted := 0
 	freed := int64(0)
 	for _, x := range ordered {
@@ -210,7 +252,6 @@ func (c *Controller) reconcile() {
 		}
 		sz, ok := imageSizes[x.id]
 		if !ok {
-			// image not present at runtime anymore; drop DB entry
 			_ = c.db.Remove(x.id)
 			continue
 		}
@@ -221,50 +262,52 @@ func (c *Controller) reconcile() {
 			}
 		}
 		if c.dry {
-			log.Info().
-				Str("op", "dry-remove").
-				Str("image_id", x.id).
-				Str("display", x.display).
-				Int64("size", sz).
-				Msg("DRY-RUN candidate")
+			c.logDryRun(x.id, x.display, sz)
 			deleted++
 			freed += sz
-		} else {
-			log.Info().
-				Str("op", "remove").
-				Str("image_id", x.id).
-				Str("display", x.display).
-				Int64("size", sz).
-				Msg("removing image")
-			if err := c.runtime.RemoveImage(c.ctx, x.id); err != nil {
-				log.Error().Err(err).Str("image", x.display).Msg("remove failed")
-				continue
-			}
-			_ = c.db.Remove(x.id)
+		} else if c.deleteImage(ctx, x.id, x.display, sz) {
 			deleted++
 			freed += sz
-			if c.deletionSleepMs > 0 {
-				time.Sleep(time.Duration(c.deletionSleepMs) * time.Millisecond)
-			}
 		}
 		if unusedTotal-freed <= c.maxUnused {
 			break
 		}
 	}
-
-	log.Info().
-		Int("deleted_count", deleted).
-		Int64("freed_bytes", freed).
-		Msg("reconcile finished")
+	log.Info().Int("deleted_count", deleted).Int64("freed_bytes", freed).Msg("deletions complete")
 }
 
-// mustMarshalString returns a compact JSON string for v.
+func (c *Controller) logDryRun(id, display string, sz int64) {
+	log.Info().
+		Str("op", "dry-remove").
+		Str("image_id", id).
+		Str("display", display).
+		Int64("size", sz).
+		Msg("DRY-RUN candidate")
+}
+
+func (c *Controller) deleteImage(ctx context.Context, id, display string, sz int64) bool {
+	log.Info().
+		Str("op", "remove").
+		Str("image_id", id).
+		Str("display", display).
+		Int64("size", sz).
+		Msg("removing image")
+	if err := c.runtime.RemoveImage(ctx, id); err != nil {
+		log.Error().Err(err).Str("image", display).Msg("remove failed")
+		return false
+	}
+	_ = c.db.Remove(id)
+	if c.deletionSleepMs > 0 {
+		time.Sleep(time.Duration(c.deletionSleepMs) * time.Millisecond)
+	}
+	return true
+}
+
 func mustMarshalString(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
 }
 
-// hasKeepLabel inspects a labels-json string and returns true if keep key is present.
 func hasKeepLabel(labels string, keep string) bool {
 	if keep == "" || labels == "" {
 		return false
