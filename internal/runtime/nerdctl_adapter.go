@@ -11,6 +11,7 @@ type NerdctlAdapter struct{}
 // NewNerdctlAdapter constructs a NerdctlAdapter.
 func NewNerdctlAdapter() *NerdctlAdapter { return &NerdctlAdapter{} }
 
+// ListImages returns all images from the Nerdctl runtime.
 func (a *NerdctlAdapter) ListImages(ctx context.Context) ([]Image, error) {
 	out, err := runCLI(ctx, "nerdctl", "images", "--format", "json")
 	if err != nil {
@@ -33,6 +34,7 @@ func (a *NerdctlAdapter) ListImages(ctx context.Context) ([]Image, error) {
 	return res, nil
 }
 
+// ListContainers returns all containers (including stopped ones) from Nerdctl runtime.
 func (a *NerdctlAdapter) ListContainers(ctx context.Context) ([]Container, error) {
 	out, err := runCLI(ctx, "nerdctl", "ps", "-a", "--format", "json")
 	if err != nil {
@@ -57,6 +59,7 @@ func (a *NerdctlAdapter) ListContainers(ctx context.Context) ([]Container, error
 	return res, nil
 }
 
+// InspectImage returns detailed info about the given image ID from Nerdctl runtime.
 func (a *NerdctlAdapter) InspectImage(ctx context.Context, imageID string) (InspectResult, error) {
 	out, err := runCLI(ctx, "nerdctl", "image", "inspect", imageID)
 	if err != nil {
@@ -102,6 +105,7 @@ func (a *NerdctlAdapter) InspectImage(ctx context.Context, imageID string) (Insp
 	}, nil
 }
 
+// RemoveImage removes the image with the given ID from the Nerdctl runtime.
 func (a *NerdctlAdapter) RemoveImage(ctx context.Context, imageID string) error {
 	_, err := runCLI(ctx, "nerdctl", "rmi", imageID)
 	return err

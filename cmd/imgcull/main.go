@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -39,7 +40,7 @@ const (
 // parseHumanSize parses sizes like "20G", "512M", "1.5G", "1024" and returns bytes.
 func parseHumanSize(size string) (int64, error) {
 	if size == "" {
-		return 0, fmt.Errorf("empty size")
+		return 0, errors.New("empty size")
 	}
 	t := strings.TrimSpace(strings.ToUpper(size))
 

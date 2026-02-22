@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,6 +13,7 @@ import (
 
 const bucketImages = "images"
 
+// ImageMeta represents the metadata we store for each container image in the DB.
 type ImageMeta struct {
 	RepoTags    string   `json:"repo_tags"`
 	DisplayName string   `json:"display_name"`
@@ -22,17 +24,19 @@ type ImageMeta struct {
 	LastUsedTs  int64    `json:"last_used_ts"`
 }
 
+// DB is a wrapper around BoltDB for storing image metadata.
 type DB struct {
 	db   *bolt.DB
 	path string
 	mu   sync.Mutex
 }
 
+// Open opens (or creates) the database at the given path and returns a DB instance.
 func Open(path string) (*DB, error) {
 	if err := mkdirIfNeeded(path); err != nil {
 		return nil, err
 	}
-	bdb, err := bolt.Open(path, 0600, &bolt.Options{Timeout: 1 * time.Second})
+	bdb, err := bolt.Open(path, 0o600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +52,18 @@ func Open(path string) (*DB, error) {
 
 func mkdirIfNeeded(path string) error {
 	dir := filepath.Dir(path)
-	return os.MkdirAll(dir, 0o755)
+	return os.MkdirAll(dir, 0o644)
 }
 
-func (d *DB) Close() error { return d.db.Close() }
+// Close closes the database.
+func (d *DB) Close() error {
+	if err := d.db.Close(); err != nil {
+		return err
+	}
+	return nil
+}
 
+// Upsert inserts or updates the image metadata for the given ID.
 func (d *DB) Upsert(id string, meta ImageMeta) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -63,6 +74,7 @@ func (d *DB) Upsert(id string, meta ImageMeta) error {
 	})
 }
 
+// SetLastUsed updates the last used timestamp for the given image ID.
 func (d *DB) SetLastUsed(id string, ts int64) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -74,7 +86,7 @@ func (d *DB) SetLastUsed(id string, ts int64) error {
 		}
 		var m ImageMeta
 		if err := json.Unmarshal(v, &m); err != nil {
-			return err
+			return fmt.Errorf("unmarshal existing meta: %w", err)
 		}
 		m.LastUsedTs = ts
 		buf, _ := json.Marshal(m)
@@ -82,6 +94,7 @@ func (d *DB) SetLastUsed(id string, ts int64) error {
 	})
 }
 
+// Remove deletes the metadata for the given image ID.
 func (d *DB) Remove(id string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -91,6 +104,7 @@ func (d *DB) Remove(id string) error {
 	})
 }
 
+// GetAll returns a map of all image IDs to their metadata.
 func (d *DB) GetAll() (map[string]ImageMeta, error) {
 	out := map[string]ImageMeta{}
 	d.mu.Lock()
@@ -103,13 +117,13 @@ func (d *DB) GetAll() (map[string]ImageMeta, error) {
 		return b.ForEach(func(k, v []byte) error {
 			var m ImageMeta
 			if err := json.Unmarshal(v, &m); err != nil {
-				return nil
+				return fmt.Errorf("unmarshal error for image meta %v: %w", m, err)
 			}
 			out[string(k)] = m
 			return nil
 		})
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get all: %w", err)
 	}
 	return out, nil
 }
