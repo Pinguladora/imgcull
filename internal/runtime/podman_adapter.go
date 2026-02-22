@@ -5,12 +5,13 @@ import (
 	"fmt"
 )
 
-// PodmanAdapter is a thin wrapper around the podman CLI.
+// PodmanAdapter is a thin wrapper around the `podman` CLI.
 type PodmanAdapter struct{}
 
 // NewPodmanAdapter constructs a PodmanAdapter.
 func NewPodmanAdapter() *PodmanAdapter { return &PodmanAdapter{} }
 
+// ListImages returns all images from Podman runtime.
 func (a *PodmanAdapter) ListImages(ctx context.Context) ([]Image, error) {
 	out, err := runCLI(ctx, "podman", "images", "--format", "json")
 	if err != nil {
@@ -33,6 +34,7 @@ func (a *PodmanAdapter) ListImages(ctx context.Context) ([]Image, error) {
 	return res, nil
 }
 
+// ListContainers returns all containers (including stopped ones) from Podman runtime.
 func (a *PodmanAdapter) ListContainers(ctx context.Context) ([]Container, error) {
 	out, err := runCLI(ctx, "podman", "ps", "-a", "--format", "json")
 	if err != nil {
@@ -57,6 +59,7 @@ func (a *PodmanAdapter) ListContainers(ctx context.Context) ([]Container, error)
 	return res, nil
 }
 
+// InspectImage returns detailed info about the given image ID from Podman runtime.
 func (a *PodmanAdapter) InspectImage(ctx context.Context, imageID string) (InspectResult, error) {
 	out, err := runCLI(ctx, "podman", "image", "inspect", imageID)
 	if err != nil {
@@ -116,6 +119,7 @@ func (a *PodmanAdapter) InspectImage(ctx context.Context, imageID string) (Inspe
 	}, nil
 }
 
+// RemoveImage removes the given image ID from Podman runtime.
 func (a *PodmanAdapter) RemoveImage(ctx context.Context, imageID string) error {
 	_, err := runCLI(ctx, "podman", "rmi", imageID)
 	return err

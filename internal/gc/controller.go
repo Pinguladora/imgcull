@@ -3,12 +3,14 @@ package gc
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/pinguladora/imgcull/internal/db"
 	"github.com/pinguladora/imgcull/internal/runtime"
-	"github.com/rs/zerolog/log"
 )
 
 // Controller implements the GC loop and uses a runtime.Adapter and a db.DB.
@@ -26,7 +28,9 @@ type Controller struct {
 }
 
 // NewController constructs a Controller.
-func NewController(ctx context.Context, rt runtime.Adapter, database *db.DB, maxUnused int64, pollSec int, keepLabel string, dry bool, minAgeHours int, chunk int, sleep int) *Controller {
+func NewController(ctx context.Context, rt runtime.Adapter, database *db.DB, maxUnused int64,
+	pollSec int, keepLabel string, dry bool, minAgeHours int, chunk int, sleep int,
+) *Controller {
 	return &Controller{
 		runtime:         rt,
 		db:              database,
@@ -46,7 +50,8 @@ func (c *Controller) Seed() error {
 	log.Info().Msg("seeding DB from runtime images")
 	imgs, err := c.runtime.ListImages(c.ctx)
 	if err != nil {
-		return err
+		log.Error().Err(err).Msg("list images failed")
+		return fmt.Errorf("list images: %w", err)
 	}
 	containers, _ := c.runtime.ListContainers(c.ctx)
 	used := map[string]struct{}{}

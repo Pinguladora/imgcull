@@ -11,6 +11,7 @@ type DockerAdapter struct{}
 // NewDockerAdapter constructs a DockerAdapter.
 func NewDockerAdapter() *DockerAdapter { return &DockerAdapter{} }
 
+// ListImages returns all images from Docker runtime.
 func (a *DockerAdapter) ListImages(ctx context.Context) ([]Image, error) {
 	out, err := runCLI(ctx, "docker", "images", "--format", "json")
 	if err != nil {
@@ -33,6 +34,7 @@ func (a *DockerAdapter) ListImages(ctx context.Context) ([]Image, error) {
 	return res, nil
 }
 
+// ListContainers returns all containers (including stopped ones) from Docker runtime.
 func (a *DockerAdapter) ListContainers(ctx context.Context) ([]Container, error) {
 	out, err := runCLI(ctx, "docker", "ps", "-a", "--format", "json")
 	if err != nil {
@@ -57,6 +59,7 @@ func (a *DockerAdapter) ListContainers(ctx context.Context) ([]Container, error)
 	return res, nil
 }
 
+// InspectImage returns detailed info about the given image ID from Docker runtime.
 func (a *DockerAdapter) InspectImage(ctx context.Context, imageID string) (InspectResult, error) {
 	out, err := runCLI(ctx, "docker", "image", "inspect", imageID)
 	if err != nil {
@@ -103,6 +106,7 @@ func (a *DockerAdapter) InspectImage(ctx context.Context, imageID string) (Inspe
 	}, nil
 }
 
+// RemoveImage removes the given image ID from Docker runtime.
 func (a *DockerAdapter) RemoveImage(ctx context.Context, imageID string) error {
 	_, err := runCLI(ctx, "docker", "rmi", imageID)
 	return err

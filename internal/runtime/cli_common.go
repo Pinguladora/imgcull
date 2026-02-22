@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -16,6 +17,7 @@ type ExecRunner interface {
 
 type defaultRunner struct{}
 
+// Run executes the command and returns combined stdout/stderr.
 func (r *defaultRunner) Run(ctx context.Context, cmd string, args ...string) (string, error) {
 	c := exec.CommandContext(ctx, cmd, args...)
 	out, err := c.CombinedOutput()
@@ -52,7 +54,7 @@ func parseJSONList(src string) ([]map[string]any, error) {
 			}
 			var m map[string]any
 			if err := json.Unmarshal([]byte(l), &m); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("could not parse line as JSON: %w\nline: %s", err, l)
 			}
 			out = append(out, m)
 		}
@@ -72,10 +74,10 @@ func parseJSONList(src string) ([]map[string]any, error) {
 	if m, ok := v.(map[string]any); ok {
 		return []map[string]any{m}, nil
 	}
-	return nil, fmt.Errorf("unexpected json shape")
+	return nil, errors.New("unexpected json shape")
 }
 
-// string conversion helper
+// string conversion helper.
 func toString(v any) string {
 	if v == nil {
 		return ""
