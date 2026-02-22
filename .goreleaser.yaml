@@ -1,0 +1,125 @@
+version: 2
+
+project_name: imgcull
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+
+builds:
+  - id: production
+    main: ./cmd/imgcull
+    binary: imgcull-{{ .Os}}-{{ .Arch }}
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath # Removes local system paths
+      - -buildvcs=false # Removes dependency on the local .git state
+    ldflags:
+      - -s -w # Strips debug info
+      - -buildid= # Zeroes out the build ID for hash parity
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.CommitDate}} # Use CommitDate, NOT current time
+      - -extldflags="-static"
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
+    goamd64:
+      - v3
+    goarm64:
+      - v8.0
+    ignore:
+      - goos: windows
+        goarch: arm64
+    # only runs on actual tags/releases
+    skip: "{{ .IsSnapshot }}"
+
+  - id: dev
+    main: ./cmd/imgcull
+    binary: imgcull-{{ .Os}}-{{ .Arch }}
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -tags=dev
+    ldflags:
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.CommitDate}} # Use CommitDate, NOT current time
+      - -extldflags="-static"
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    # only runs on snapshot builds
+    skip: "{{ not.IsSnapshot }}"
+
+report_sizes: true
+
+upx:
+  - ids: ["production"] # Only compress production builds
+    enabled: true
+    compress: best
+    lzma: true
+    goos: [linux] # Skip 'darwin' (macOS) to avoid signing issues and Windows to avoid antivirus false positives
+    goarch: [arm64] # Only 'arm64' for IoT devices, which benefit most from compression
+
+gomod:
+  proxy: true # Ensures dependencies are fetched from the proxy (Verifiable builds https://goreleaser.com/customization/verifiable_builds/)
+
+archives:
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  footer: >-
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+
+sboms:
+  - artifacts: archive
+    disable: false
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args:
+      - "sign-blob"
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
+    output: true
