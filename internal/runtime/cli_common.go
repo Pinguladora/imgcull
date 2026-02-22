@@ -10,14 +10,12 @@ import (
 	"time"
 )
 
-// ExecRunner allows adapters to inject a runner for tests.
 type ExecRunner interface {
 	Run(ctx context.Context, cmd string, args ...string) (string, error)
 }
 
 type defaultRunner struct{}
 
-// Run executes the command and returns combined stdout/stderr.
 func (r *defaultRunner) Run(ctx context.Context, cmd string, args ...string) (string, error) {
 	c := exec.CommandContext(ctx, cmd, args...)
 	out, err := c.CombinedOutput()
@@ -27,16 +25,16 @@ func (r *defaultRunner) Run(ctx context.Context, cmd string, args ...string) (st
 	return string(out), nil
 }
 
-// Runner is used by adapters; tests can replace it with a fake.
 var Runner ExecRunner = &defaultRunner{}
 
-// runCLI calls the configured Runner.
 func runCLI(ctx context.Context, cmd string, args ...string) (string, error) {
-	return Runner.Run(ctx, cmd, args...)
+	out, err := Runner.Run(ctx, cmd, args...)
+	if err != nil {
+		return "", fmt.Errorf("run cli: %w", err)
+	}
+	return out, nil
 }
 
-// parseJSONList parses either a JSON array or newline-separated JSON objects.
-// Returns a slice of maps (each map = one JSON object).
 func parseJSONList(src string) ([]map[string]any, error) {
 	src = strings.TrimSpace(src)
 	if src == "" {
@@ -44,23 +42,29 @@ func parseJSONList(src string) ([]map[string]any, error) {
 	}
 	var v any
 	if err := json.Unmarshal([]byte(src), &v); err != nil {
-		// try newline separated JSON objects
-		lines := strings.Split(src, "\n")
-		out := make([]map[string]any, 0, len(lines))
-		for _, l := range lines {
-			l = strings.TrimSpace(l)
-			if l == "" {
-				continue
-			}
-			var m map[string]any
-			if err := json.Unmarshal([]byte(l), &m); err != nil {
-				return nil, fmt.Errorf("could not parse line as JSON: %w\nline: %s", err, l)
-			}
-			out = append(out, m)
-		}
-		return out, nil
+		return parseNewlineSeparatedJSON(src)
 	}
-	// if it's already an array
+	return parseJSONArray(v)
+}
+
+func parseNewlineSeparatedJSON(src string) ([]map[string]any, error) {
+	lines := strings.Split(src, "\n")
+	out := make([]map[string]any, 0, len(lines))
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if l == "" {
+			continue
+		}
+		var m map[string]any
+		if err := json.Unmarshal([]byte(l), &m); err != nil {
+			return nil, fmt.Errorf("could not parse line as JSON: %w\nline: %s", err, l)
+		}
+		out = append(out, m)
+	}
+	return out, nil
+}
+
+func parseJSONArray(v any) ([]map[string]any, error) {
 	if arr, ok := v.([]any); ok {
 		out := make([]map[string]any, 0, len(arr))
 		for _, e := range arr {
@@ -70,14 +74,12 @@ func parseJSONList(src string) ([]map[string]any, error) {
 		}
 		return out, nil
 	}
-	// if it's a single object
 	if m, ok := v.(map[string]any); ok {
 		return []map[string]any{m}, nil
 	}
 	return nil, errors.New("unexpected json shape")
 }
 
-// string conversion helper.
 func toString(v any) string {
 	if v == nil {
 		return ""
@@ -90,15 +92,12 @@ func toString(v any) string {
 	case json.Number:
 		return t.String()
 	case float64:
-		// JSON numbers are float64 by default; convert without trailing .0 if possible
-		s := fmt.Sprintf("%v", t)
-		return s
+		return fmt.Sprintf("%v", t)
 	default:
 		return fmt.Sprintf("%v", t)
 	}
 }
 
-// toInt64 handles common numeric shapes from decoded JSON.
 func toInt64(v any) int64 {
 	switch t := v.(type) {
 	case float64:
@@ -115,51 +114,57 @@ func toInt64(v any) int64 {
 	return 0
 }
 
-// unmarshalRepoTags deals with various shapes for RepoTags/Repo field: []string, JSON string, or single string.
 func unmarshalRepoTags(raw any) []string {
 	if raw == nil {
 		return nil
 	}
-	// if it's already []interface{}
+
 	switch v := raw.(type) {
 	case []any:
-		out := make([]string, 0, len(v))
-		for _, x := range v {
-			if s, ok := x.(string); ok {
-				out = append(out, s)
-			}
-		}
-		return out
+		return extractStrings(v)
 	case []string:
 		return v
 	case string:
-		// sometimes adapters pass JSON-encoded string
-		s := strings.TrimSpace(v)
-		// try parse as JSON array
-		var arr []string
-		if err := json.Unmarshal([]byte(s), &arr); err == nil {
-			return arr
-		}
-		// fallback: single value
-		if s == "" {
-			return nil
-		}
-		return []string{s}
+		return parseStringRepoTags(v)
 	default:
-		// try marshal/unmarshal roundtrip
-		b, err := json.Marshal(v)
-		if err != nil {
-			return nil
-		}
-		var arr []string
-		if err := json.Unmarshal(b, &arr); err == nil {
-			return arr
-		}
-		return nil
+		return tryMarshalRoundtrip(v)
 	}
 }
 
-// parseTimeRFC3339 returns unix seconds or 0.
+func extractStrings(v []any) []string {
+	out := make([]string, 0, len(v))
+	for _, x := range v {
+		if s, ok := x.(string); ok {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func parseStringRepoTags(v string) []string {
+	s := strings.TrimSpace(v)
+	var arr []string
+	if err := json.Unmarshal([]byte(s), &arr); err == nil {
+		return arr
+	}
+	if s == "" {
+		return nil
+	}
+	return []string{s}
+}
+
+func tryMarshalRoundtrip(v any) []string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	var arr []string
+	if err := json.Unmarshal(b, &arr); err == nil {
+		return arr
+	}
+	return nil
+}
+
 func parseTimeRFC3339(s string) int64 {
 	if s == "" {
 		return 0
@@ -167,7 +172,6 @@ func parseTimeRFC3339(s string) int64 {
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return t.Unix()
 	}
-	// tolerate slight variants
 	if t, err := time.Parse("2006-01-02T15:04:05.999999999Z07:00", s); err == nil {
 		return t.Unix()
 	}

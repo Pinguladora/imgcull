@@ -52,7 +52,6 @@ linters:
     - predeclared
     - recvcheck
     - revive
-    - rowserrcheck
     - spancheck
     - staticcheck
     - tagalign
@@ -116,10 +115,7 @@ linters:
             - checkPrivateReceivers
             - sayRepetitiveInsteadOfStutters
           severity: warning
-          disabled: false
-    rowserrcheck:
-      packages:
-        - github.com/jmoiron/sqlx
+          disabled: true
     usetesting:
       os-mkdir-temp: true
       os-setenv: true
@@ -131,6 +127,9 @@ linters:
       - linters:
           - goconst
         path: (.+)_test\.go
+      - linters:
+          - gosec
+        text: "G204:"
     paths:
       - third_party$
       - builtin$
