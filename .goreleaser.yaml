@@ -80,6 +80,27 @@ gomod:
   proxy: true # Ensures dependencies are fetched from the proxy (Verifiable builds https://goreleaser.com/customization/verifiable_builds/)
   mod: readonly # Prevents accidental changes to go.mod/go.sum during build (before Go 1.26 behavior)
 
+kos:
+  - id: imgcull-image
+    build: production # Links to the reproducible build above
+    repositories:
+      - ghcr.io/pinguladora/imgcull
+    user: "65532:65532"
+    tags:
+      - latest
+      - "{{.Tag}}"
+
+    platforms:
+      - linux/amd64
+      - linux/arm64
+
+    # SBOMs are built by default in 2026 for security compliance
+    sbom: spdx
+
+    # Set internal file times to Unix Epoch for bit-for-bit parity
+    creation_time: "{{.CommitTimestamp}}"
+    ko_data_creation_time: "{{.CommitTimestamp}}"
+
 archives:
   - formats: [tar.gz]
     # this name template makes the OS and Arch compatible with the results of `uname`.
@@ -113,6 +134,7 @@ release:
 sboms:
   - artifacts: archive
     disable: false
+
 signs:
   - cmd: cosign
     artifacts: checksum
@@ -123,3 +145,6 @@ signs:
       - "${artifact}"
       - "--yes"
     output: true
+
+docker_signs:
+  - artifacts: manifests
