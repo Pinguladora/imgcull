@@ -136,15 +136,26 @@ sboms:
     disable: false
 
 signs:
-  - cmd: cosign
-    artifacts: checksum
+  - id: keyless-blob-sign
+    artifacts: all
+    cmd: cosign
     signature: "${artifact}.sigstore.json"
     args:
       - "sign-blob"
       - "--bundle=${signature}"
       - "${artifact}"
+      - "--use-signing-config=false" # Avoids reliance on Rekor TSA to provide customization
+      - "--timestamp-server-url=http://freetsa.org/tsr" 
       - "--yes"
     output: true
 
 docker_signs:
-  - artifacts: manifests
+  - id: keyless-image-sign
+    artifacts: all
+    cmd: cosign
+    args:
+      - "sign"
+      - "${artifact}@${digest}"
+      - "--use-signing-config=false" # Avoids reliance on Rekor TSA to provide customization
+      - "--timestamp-server-url=http://freetsa.org/tsr"
+    output: true
