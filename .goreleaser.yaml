@@ -60,6 +60,11 @@ builds:
     goarch:
       - amd64
       - arm64
+    # https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
+    goamd64:
+      - v3
+    goarm64:
+      - v8.0
     ignore:
       - goos: windows
         goarch: arm64
