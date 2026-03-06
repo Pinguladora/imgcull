@@ -113,7 +113,6 @@ archives:
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     # use zip for windows archives
@@ -133,7 +132,6 @@ release:
   footer: >-
 
     ---
-
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
 sboms:
@@ -150,7 +148,7 @@ signs:
       - "--bundle=${signature}"
       - "${artifact}"
       - "--use-signing-config=false" # Avoids reliance on Rekor TSA to provide customization
-      - "--timestamp-server-url=http://freetsa.org/tsr" 
+      - "--timestamp-server-url=http://freetsa.org/tsr"
       - "--yes"
     output: true
 
