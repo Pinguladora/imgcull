@@ -1,13 +1,9 @@
 [tools]
 go = "1.26.0"
-upx = "5.1.0"
+golangci-lint = "2.11.4"
+goreleaser = "2.14.3"
 syft = "1.42.1"
-watchexec = "2.5.0"
-goreleaser = "2.14.1"
-golangci-lint = "2.10.1"
-
-[env]
-TIRIRTH = "0"
+upx = "5.1.1"
 
 [tasks."lint:golangci-lint"]
 description = "Lint using golangci with autofix"
