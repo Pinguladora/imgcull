@@ -99,7 +99,6 @@ kos:
       - linux/amd64
       - linux/arm64
 
-    # SBOMs are built by default in 2026 for security compliance
     sbom: spdx
 
     # Set internal file times to Unix Epoch for bit-for-bit parity
@@ -158,7 +157,7 @@ docker_signs:
     cmd: cosign
     args:
       - "sign"
-      - "${artifact}@${digest}"
+      - "${artifact}"
       - "--use-signing-config=false" # Avoids reliance on Rekor TSA to provide customization
       - "--timestamp-server-url=http://freetsa.org/tsr"
     output: true
