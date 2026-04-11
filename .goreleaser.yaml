@@ -134,9 +134,26 @@ release:
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
 sboms:
-  - artifacts: archive
-    disable: false
-
+  - id: cyclonedx
+    artifacts: archive
+    cmd: syft
+    args:
+      - "scan"
+      - "$artifact"
+      - "--output"
+      - "cyclonedx-json=$document"
+    documents:
+      - "${artifact}.cdx.json"
+  - id: spdx
+    artifacts: archive
+    cmd: syft
+    args:
+      - "scan"
+      - "$artifact"
+      - "--output"
+      - "spdx-json=$document"
+    documents:
+      - "${artifact}.spdx.json"
 signs:
   - id: keyless-blob-sign
     artifacts: all
