@@ -119,6 +119,10 @@ archives:
       - goos: windows
         formats: [zip]
 
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
 changelog:
   use: github
   sort: asc
