@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.5](https://github.com/Pinguladora/imgcull/compare/1fe466a20800a9133d8813266256a4d1ebc4beda..v0.2.5) - 2026-04-11
+#### Bug Fixes
+- (**ci**) add shebang instead of shell in mise tasks - ([1fe466a](https://github.com/Pinguladora/imgcull/commit/1fe466a20800a9133d8813266256a4d1ebc4beda)) - [@Pinguladora](https://github.com/Pinguladora)
+
+- - -
+
 ## [v0.2.4](https://github.com/Pinguladora/imgcull/compare/4b5d5e1454a8525a80b9b75c24bac1e4c9c09eb2..v0.2.4) - 2026-04-11
 #### Bug Fixes
 - (**ci**) add explicit bash shell for mise task - ([4b5d5e1](https://github.com/Pinguladora/imgcull/commit/4b5d5e1454a8525a80b9b75c24bac1e4c9c09eb2)) - [@Pinguladora](https://github.com/Pinguladora)
