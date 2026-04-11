@@ -284,7 +284,7 @@ sboms:
       - "${artifact}.spdx.json"
 signs:
   - id: keyless-blob-sign
-    artifacts: all
+    artifacts: checksum
     cmd: cosign
     signature: "${artifact}.sigstore.json"
     args:
