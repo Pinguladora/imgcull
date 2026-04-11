@@ -120,18 +120,35 @@ archives:
         formats: [zip]
 
 changelog:
+  use: github
   sort: asc
+  format: "{{ .Message }}"
+  groups:
+    - title: "Breaking Changes"
+      regexp: '^.*?(\([[:word:]]+\))??!:.+$'
+      order: 0
+    - title: "Features"
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 100
+    - title: "Bug Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 200
+    - title: "Dependency Updates"
+      regexp: '^.*?(feat|fix|chore)\(deps?.+\)!?:.+$'
+      order: 300
+    - title: "Miscellaneous Work"
+      order: 999
   filters:
     exclude:
-      - "^docs:"
-      - "^test:"
-      - "^chore:"
+      - '^test(\(.+\))?:'
+      - '^refactor(\(.+\))?:'
+      - '^style(\(.+\))?:'
 
 release:
-  footer: >-
-
-    ---
-    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+  prerelease: auto
+  include_meta: true
+  footer: |
+    **Full Changelog**: https://github.com/Pinguladora/imgcull/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 sboms:
   - id: cyclonedx
