@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.0](https://github.com/Pinguladora/imgcull/compare/44ebef36042d198b03ba03314165cca3b7a51798..v0.2.0) - 2026-04-11
+#### Features
+- (**build**) add FIPS 140-3 build support - ([61316ea](https://github.com/Pinguladora/imgcull/commit/61316ea8d2bffc7433f469d3480f8355cbade411)) - [@Pinguladora](https://github.com/Pinguladora)
+- (**ci**) add release workflow - ([fac9288](https://github.com/Pinguladora/imgcull/commit/fac9288cbee03eecc24af99e4f5f87d61d80d92e)) - [@Pinguladora](https://github.com/Pinguladora)
+- (**ci**) add pinact config - ([308f2eb](https://github.com/Pinguladora/imgcull/commit/308f2eb25840216c2cbe2e74325bfae10e98208f)) - [@Pinguladora](https://github.com/Pinguladora)
+- (**ci**) add Zizmor linting - ([e639135](https://github.com/Pinguladora/imgcull/commit/e63913539d4d4f2c901addafc178bbb95856f697)) - [@Pinguladora](https://github.com/Pinguladora)
+#### Performance Improvements
+- (**go**) add PGO default profile - ([c08809e](https://github.com/Pinguladora/imgcull/commit/c08809e504eee10e224f9eea79376cb5ab7f9f07)) - [@Pinguladora](https://github.com/Pinguladora)
+
+- - -
+
 ## [v0.1.0](https://github.com/Pinguladora/imgcull/compare/a17fd9254e6d1575fb2544ee5beda813dbf07575..v0.1.0) - 2026-04-02
 #### Features
 - (**imgcull**) add first working prototype - ([4d413b6](https://github.com/Pinguladora/imgcull/commit/4d413b6487f6657524a414f949134332d692145e)) - [@Pinguladora](https://github.com/Pinguladora)

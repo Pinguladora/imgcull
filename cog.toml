@@ -12,7 +12,6 @@ branch_whitelist = [
 skip_ci = "[skip ci]"
 skip_untracked = true
 pre_bump_hooks = [
-    "mise run build"
 ]
 post_bump_hooks = [
     "git push origin {{version_tag}}"
