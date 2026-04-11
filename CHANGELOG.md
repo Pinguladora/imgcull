@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.1](https://github.com/Pinguladora/imgcull/compare/5536868a05351570a02034d639d963e6d7febaae..v0.2.1) - 2026-04-11
+#### Bug Fixes
+- (**build**) fix release workflow - ([1d53d2c](https://github.com/Pinguladora/imgcull/commit/1d53d2cd6c44a76888890d305b06a29a21367406)) - [@Pinguladora](https://github.com/Pinguladora)
+
+- - -
+
 ## [v0.2.0](https://github.com/Pinguladora/imgcull/compare/44ebef36042d198b03ba03314165cca3b7a51798..v0.2.0) - 2026-04-11
 #### Features
 - (**build**) add FIPS 140-3 build support - ([61316ea](https://github.com/Pinguladora/imgcull/commit/61316ea8d2bffc7433f469d3480f8355cbade411)) - [@Pinguladora](https://github.com/Pinguladora)
