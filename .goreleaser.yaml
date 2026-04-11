@@ -291,8 +291,6 @@ signs:
       - "sign-blob"
       - "--bundle=${signature}"
       - "${artifact}"
-      - "--use-signing-config=false" # Avoids reliance on Rekor TSA to provide customization
-      - "--timestamp-server-url=http://freetsa.org/tsr"
       - "--yes"
     output: true
 docker_signs:
@@ -302,6 +300,5 @@ docker_signs:
     args:
       - "sign"
       - "${artifact}"
-      - "--use-signing-config=false" # Avoids reliance on Rekor TSA to provide customization
-      - "--timestamp-server-url=http://freetsa.org/tsr"
+      - "--yes"
     output: true
