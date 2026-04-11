@@ -1,0 +1,208 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # GitHub Releases upload
+      packages: write # GHCR push (KO images)
+      id-token: write # Cosign keyless signing (OIDC)
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+      image: ${{ steps.digests.outputs.image }}
+      image-fips: ${{ steps.digests.outputs.image-fips }}
+      digest: ${{ steps.digests.outputs.digest }}
+      digest-fips: ${{ steps.digests.outputs.digest-fips }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+          disable-telemetry: "true"
+          disable-sudo: "true"
+      - name: Optimize Git config for CI
+        run: |
+          git config --global core.compression 0
+          git config --global core.fsync -all
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          filter: "blob:none"
+      - name: Set up mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          install: true
+          cache: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MISE_ENV: ci
+      - name: Install cosign
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+      - name: Login to GHCR
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run release
+        run: mise run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate subject hashes for SLSA provenance
+        id: hash
+        run: |
+          echo "hashes=$(base64 -w0 dist/checksums.txt)" >> "$GITHUB_OUTPUT"
+      - name: Extract container image digests
+        id: digests
+        run: |
+          echo "image=$(mise run release:extract-image imgcull-image)" >> "$GITHUB_OUTPUT"
+          echo "digest=$(mise run release:extract-digest imgcull-image)" >> "$GITHUB_OUTPUT"
+          echo "image-fips=$(mise run release:extract-image imgcull-image-fips)" >> "$GITHUB_OUTPUT"
+          echo "digest-fips=$(mise run release:extract-digest imgcull-image-fips)" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  # SLSA Level 3 provenance
+  # ---------------------------------------------------------------------------
+
+  provenance-binaries:
+    name: SLSA provenance (binaries)
+    needs: release
+    permissions:
+      actions: read # Required by SLSA generator
+      id-token: write # SLSA provenance signing
+      contents: write # Attestation upload
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.release.outputs.hashes }}"
+      upload-assets: false
+      provenance-name: provenance-binaries.intoto.jsonl
+      private-repository: false
+
+  provenance-image:
+    name: SLSA provenance (image)
+    needs: release
+    permissions:
+      actions: read # Required by SLSA generator
+      id-token: write # SLSA provenance signing
+      packages: write # Attestation push to GHCR
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: "${{ needs.release.outputs.image }}"
+      digest: "${{ needs.release.outputs.digest }}"
+      private-repository: false
+      registry-username: "${{ github.actor }}"
+    secrets:
+      registry-password: "${{ secrets.GITHUB_TOKEN }}"
+
+  provenance-image-fips:
+    name: SLSA provenance (FIPS image)
+    needs: release
+    permissions:
+      actions: read # Required by SLSA generator
+      id-token: write # SLSA provenance signing
+      packages: write # Attestation push to GHCR
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: "${{ needs.release.outputs.image-fips }}"
+      digest: "${{ needs.release.outputs.digest-fips }}"
+      private-repository: false
+      registry-username: "${{ github.actor }}"
+    secrets:
+      registry-password: "${{ secrets.GITHUB_TOKEN }}"
+
+  # ---------------------------------------------------------------------------
+  # Post-release verification
+  # ---------------------------------------------------------------------------
+
+  verify:
+    name: Verify release
+    needs:
+      [release, provenance-binaries, provenance-image, provenance-image-fips]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # Download release artifacts
+      packages: read # Pull container images from GHCR
+      actions: read # Download provenance workflow artifacts
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+          disable-telemetry: "true"
+          disable-sudo: "true"
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            mise.toml
+            mise.ci.toml
+          sparse-checkout-cone-mode: false
+          filter: "blob:none"
+      - name: Set up mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          install: true
+          cache: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MISE_ENV: ci
+      - name: Install cosign
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+      - name: Login to GHCR
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download release artifacts for verification
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          gh release download "${VERSION}" \
+            -R "${GITHUB_REPOSITORY}" \
+            -p "imgcull_Linux_x86_64_v3.tar.gz" \
+            -p "imgcull_Linux_x86_64_v3.tar.gz.sigstore.json" \
+            -p "imgcull-fips_Linux_x86_64_v3.tar.gz" \
+            -p "imgcull-fips_Linux_x86_64_v3.tar.gz.sigstore.json" \
+            -p "imgcull_Windows_x86_64_v3.zip" \
+            -p "imgcull_Windows_x86_64_v3.zip.sigstore.json" \
+            -p "checksums.txt" \
+            -p "checksums.txt.sigstore.json"
+      - name: Download binary provenance
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: provenance-binaries.intoto.jsonl
+      - name: Verify standard binary (Linux tar.gz)
+        run: mise run verify:binary imgcull_Linux_x86_64_v3.tar.gz
+      - name: Verify FIPS binary (Linux tar.gz)
+        run: mise run verify:binary imgcull-fips_Linux_x86_64_v3.tar.gz
+      - name: Verify Windows binary (zip)
+        run: mise run verify:binary imgcull_Windows_x86_64_v3.zip
+      - name: Verify container image
+        env:
+          TAG: ${{ github.ref_name }}
+          IMAGE: ${{ needs.release.outputs.image }}
+        run: mise run verify:image "${IMAGE}:${TAG}"
+      - name: Verify FIPS container image
+        env:
+          TAG: "${{ github.ref_name }}-fips"
+          IMAGE: ${{ needs.release.outputs.image-fips }}
+        run: mise run verify:image "${IMAGE}:${TAG}"

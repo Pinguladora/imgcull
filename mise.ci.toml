@@ -1,3 +1,58 @@
+[settings]
+disable_backends = ["asdf", "vfox", "ubi"]
+
 [tasks.release]
 description = "Production release"
 run = "goreleaser release --clean"
+
+[tasks."release:extract-image"]
+description = "Extract container image reference from goreleaser artifacts"
+run = '''
+jq -r '
+  [.[] | select(.type=="Docker Manifest") | select(.extra.ID=="{{arg(i=0, name="ko_id")}}")]
+  | first | .name | split("@") | first | split(":") | first
+' dist/artifacts.json
+'''
+
+[tasks."release:extract-digest"]
+description = "Extract container image digest from goreleaser artifacts"
+run = '''
+jq -r '
+  [.[] | select(.type=="Docker Manifest") | select(.extra.ID=="{{arg(i=0, name="ko_id")}}")]
+  | first | .extra.Digest
+' dist/artifacts.json
+'''
+
+[tasks."verify:binary"]
+description = "Verify binary archive (checksum, cosign signature and SLSA provenance)"
+run = """
+set -euo pipefail
+ARCHIVE="{{arg(i=0, name="archive")}}"
+sha256sum --check --ignore-missing checksums.txt
+cosign verify-blob \
+  --bundle "${ARCHIVE}.sigstore.json" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp "^https://github.com/Pinguladora/imgcull/" \
+  "${ARCHIVE}"
+slsa-verifier verify-artifact \
+  --provenance-path provenance-binaries.intoto.jsonl \
+  --source-uri github.com/Pinguladora/imgcull \
+  "${ARCHIVE}"
+"""
+
+[tasks."verify:image"]
+description = "Verify container image (cosign signature and SLSA provenance)"
+run = """
+set -euo pipefail
+IMAGE_REF="{{arg(i=0, name="image_ref")}}"
+cosign verify \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp "^https://github.com/Pinguladora/imgcull/" \
+  "${IMAGE_REF}"
+slsa-verifier verify-image \
+  --source-uri github.com/Pinguladora/imgcull \
+  "${IMAGE_REF}"
+"""
+
+[tools]
+"aqua:slsa-verifier" = "2.7.1"
