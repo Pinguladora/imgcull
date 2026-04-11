@@ -9,7 +9,11 @@ before:
 builds:
   - id: production
     main: ./cmd/imgcull
-    binary: imgcull-{{ .Os}}-{{ .Arch }}
+    binary: >-
+      imgcull-{{ .Os }}-
+      {{- .Arch }}
+      {{- with .Amd64 }}-{{ . }}{{ end }}
+      {{- with .Arm64 }}-{{ . }}{{ end }}
     env:
       - CGO_ENABLED=0
     flags:
@@ -23,27 +27,29 @@ builds:
       - -X main.date={{.CommitDate}} # Use CommitDate, NOT current time
       - -extldflags="-static"
     mod_timestamp: "{{ .CommitTimestamp }}"
-    goos:
-      - linux
-      - windows
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    # https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
-    goamd64:
-      - v4
-    goarm64:
-      - v9.0
-    ignore:
-      - goos: windows
-        goarch: arm64
+    targets:
+      # AMD64 tiers
+      - linux_amd64_v3 # Baseline: AVX2, BMI2 (Haswell+ 2013)
+      - linux_amd64_v4 # Performance: AVX-512 (Ice Lake+)
+      - windows_amd64_v3
+      - windows_amd64_v4
+      - darwin_amd64_v3
+      - darwin_amd64_v4
+      # ARM64 tiers
+      - linux_arm64_v8.0 # Baseline: RPi 3/4/5, Jetson Nano, most IoT SBCs
+      - linux_arm64_v9.0 # Performance: Cortex-X2+, Neoverse V2+
+      - darwin_arm64_v8.0
+      - darwin_arm64_v9.0
     # only runs on actual tags/releases
     skip: "{{ .IsSnapshot }}"
 
   - id: production-fips
     main: ./cmd/imgcull
-    binary: imgcull-fips-{{ .Os}}-{{ .Arch }}
+    binary: >-
+      imgcull-fips-{{ .Os }}-
+      {{- .Arch }}
+      {{- with .Amd64 }}-{{ . }}{{ end }}
+      {{- with .Arm64 }}-{{ . }}{{ end }}
     env:
       - CGO_ENABLED=0
       - GOFIPS140=v1.26.0
@@ -58,27 +64,29 @@ builds:
       - -X main.date={{.CommitDate}} # Use CommitDate, NOT current time
       - -extldflags="-static"
     mod_timestamp: "{{ .CommitTimestamp }}"
-    goos:
-      - linux
-      - windows
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    # https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
-    goamd64:
-      - v4
-    goarm64:
-      - v9.0
-    ignore:
-      - goos: windows
-        goarch: arm64
+    targets:
+      # AMD64 tiers
+      - linux_amd64_v3 # Baseline: AVX2, BMI2 (Haswell+ 2013)
+      - linux_amd64_v4 # Performance: AVX-512 (Ice Lake+)
+      - windows_amd64_v3
+      - windows_amd64_v4
+      - darwin_amd64_v3
+      - darwin_amd64_v4
+      # ARM64 tiers
+      - linux_arm64_v8.0 # Baseline: RPi 3/4/5, Jetson Nano, most IoT SBCs
+      - linux_arm64_v9.0 # Performance: Cortex-X2+, Neoverse V2+
+      - darwin_arm64_v8.0
+      - darwin_arm64_v9.0
     # only runs on actual tags/releases
     skip: "{{ .IsSnapshot }}"
 
   - id: dev
     main: ./cmd/imgcull
-    binary: imgcull-{{ .Os}}-{{ .Arch }}
+    binary: >-
+      imgcull-{{ .Os }}-
+      {{- .Arch }}
+      {{- with .Amd64 }}-{{ . }}{{ end }}
+      {{- with .Arm64 }}-{{ . }}{{ end }}
     env:
       - CGO_ENABLED=0
     flags:
@@ -88,27 +96,29 @@ builds:
     ldflags:
       - -X main.version={{.Version}}-dev
       - -extldflags="-static"
-    goos:
-      - linux
-      - windows
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    # https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
-    goamd64:
-      - v4
-    goarm64:
-      - v9.0
-    ignore:
-      - goos: windows
-        goarch: arm64
+    targets:
+      # AMD64 tiers
+      - linux_amd64_v3 # Baseline: AVX2, BMI2 (Haswell+ 2013)
+      - linux_amd64_v4 # Performance: AVX-512 (Ice Lake+)
+      - windows_amd64_v3
+      - windows_amd64_v4
+      - darwin_amd64_v3
+      - darwin_amd64_v4
+      # ARM64 tiers
+      - linux_arm64_v8.0 # Baseline: RPi 3/4/5, Jetson Nano, most IoT SBCs
+      - linux_arm64_v9.0 # Performance: Cortex-X2+, Neoverse V2+
+      - darwin_arm64_v8.0
+      - darwin_arm64_v9.0
     # only runs on snapshot builds
     skip: "{{ not .IsSnapshot }}"
 
   - id: dev-fips
     main: ./cmd/imgcull
-    binary: imgcull-fips-{{ .Os}}-{{ .Arch }}
+    binary: >-
+      imgcull-fips-{{ .Os }}-
+      {{- .Arch }}
+      {{- with .Amd64 }}-{{ . }}{{ end }}
+      {{- with .Arm64 }}-{{ . }}{{ end }}
     env:
       - CGO_ENABLED=0
       - GOFIPS140=v1.26.0
@@ -119,21 +129,19 @@ builds:
     ldflags:
       - -X main.version={{.Version}}-dev
       - -extldflags="-static"
-    goos:
-      - linux
-      - windows
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    # https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
-    goamd64:
-      - v4
-    goarm64:
-      - v9.0
-    ignore:
-      - goos: windows
-        goarch: arm64
+    targets:
+      # AMD64 tiers
+      - linux_amd64_v3 # Baseline: AVX2, BMI2 (Haswell+ 2013)
+      - linux_amd64_v4 # Performance: AVX-512 (Ice Lake+)
+      - windows_amd64_v3
+      - windows_amd64_v4
+      - darwin_amd64_v3
+      - darwin_amd64_v4
+      # ARM64 tiers
+      - linux_arm64_v8.0 # Baseline: RPi 3/4/5, Jetson Nano, most IoT SBCs
+      - linux_arm64_v9.0 # Performance: Cortex-X2+, Neoverse V2+
+      - darwin_arm64_v8.0
+      - darwin_arm64_v9.0
     # only runs on snapshot builds
     skip: "{{ not .IsSnapshot }}"
 
@@ -152,8 +160,9 @@ gomod:
   mod: readonly # Prevents accidental changes to go.mod/go.sum during build (before Go 1.26 behavior)
 
 kos:
+  # Production performance tier for container/cluster workloads
   - id: imgcull-image
-    build: production # Links to the reproducible build above
+    build: production
     repositories:
       - ghcr.io/pinguladora/imgcull
     user: "65532:65532"
@@ -164,20 +173,55 @@ kos:
       - linux/amd64
       - linux/arm64
     sbom: spdx
-    # Set internal file times to Unix Epoch for bit-for-bit parity
+    creation_time: "{{.CommitTimestamp}}"
+    ko_data_creation_time: "{{.CommitTimestamp}}"
+
+  # FIPS compliance for container/cluster workloads
+  - id: imgcull-image-fips
+    build: production-fips
+    repositories:
+      - ghcr.io/pinguladora/imgcull
+    user: "65532:65532"
+    tags:
+      - "{{.Tag}}-fips"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    sbom: spdx
     creation_time: "{{.CommitTimestamp}}"
     ko_data_creation_time: "{{.CommitTimestamp}}"
 
 archives:
-  - formats: [tar.gz]
+  - id: standard
+    ids: [production, dev]
+    allow_different_binary_count: true
+    formats: [tar.gz]
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "arm64" }}aarch64
       {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+      {{- with .Amd64 }}_{{ . }}{{ end }}
+      {{- with .Arm64 }}_{{ . }}{{ end }}
     # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+  - id: fips
+    ids: [production-fips, dev-fips]
+    allow_different_binary_count: true
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}-fips_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "arm64" }}aarch64
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- with .Amd64 }}_{{ . }}{{ end }}
+      {{- with .Arm64 }}_{{ . }}{{ end }}
     format_overrides:
       - goos: windows
         formats: [zip]
