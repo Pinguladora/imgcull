@@ -35,3 +35,7 @@ go.work.sum
 # .vscode/
 # Added by goreleaser init:
 dist/
+
+# Mise local env
+mise.local.toml
+mise.local.lock
