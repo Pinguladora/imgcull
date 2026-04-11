@@ -1,0 +1,3 @@
+[tasks.release]
+description = "Production release"
+run = "goreleaser release --clean"

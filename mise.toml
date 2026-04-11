@@ -30,10 +30,6 @@ description = "Local snapshot build (skips signing and SBOM)"
 run = "goreleaser release --snapshot --clean --skip=sign,sbom"
 alias = "snapc"
 
-[tasks.release]
-description = "Production release"
-run = "goreleaser release --clean"
-
 [tasks.pgo-collect]
 description = "Build with pprof and collect a 30s CPU profile"
 run = """
