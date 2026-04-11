@@ -1,5 +1,5 @@
 [tools]
-go = "1.26.0"
+go = "1.26.2"
 golangci-lint = "2.11.4"
 goreleaser = "2.14.3"
 syft = "1.42.1"
