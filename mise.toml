@@ -21,9 +21,14 @@ run = "go build ./cmd/imgcull"
 alias = "b"
 
 [tasks.snapshot]
+description = "Local snapshot build (skips signing, SBOM and ko)"
+run = "goreleaser release --snapshot --clean --skip=sign,sbom,ko"
+alias = "snap"
+
+[tasks."snapshot:container"]
 description = "Local snapshot build (skips signing and SBOM)"
 run = "goreleaser release --snapshot --clean --skip=sign,sbom"
-alias = "snap"
+alias = "snapc"
 
 [tasks.release]
 description = "Production release"
