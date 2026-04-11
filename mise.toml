@@ -1,7 +1,7 @@
 [tools]
 go = "1.26.2"
 golangci-lint = "2.11.4"
-goreleaser = "2.14.3"
+goreleaser = "2.15.2"
 prek = "0.3.8"
 syft = "1.42.1"
 upx = "5.1.1"
