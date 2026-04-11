@@ -25,6 +25,7 @@ jq -r '
 
 [tasks."verify:binary"]
 description = "Verify binary archive (checksum, cosign signature and SLSA provenance)"
+shell = "bash"
 run = """
 set -euo pipefail
 ARCHIVE="{{arg(i=0, name="archive")}}"
@@ -42,6 +43,7 @@ slsa-verifier verify-artifact \
 
 [tasks."verify:image"]
 description = "Verify container image (cosign signature and SLSA provenance)"
+shell = "bash"
 run = """
 set -euo pipefail
 IMAGE_REF="{{arg(i=0, name="image_ref")}}"
