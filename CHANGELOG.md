@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.3](https://github.com/Pinguladora/imgcull/compare/a51af52aa0fabb5d8f634aa17ef6cee08fad1860..v0.2.3) - 2026-04-11
+#### Bug Fixes
+- (**ci**) fix release SLSA verification - ([a51af52](https://github.com/Pinguladora/imgcull/commit/a51af52aa0fabb5d8f634aa17ef6cee08fad1860)) - [@Pinguladora](https://github.com/Pinguladora)
+
+- - -
+
 ## [v0.2.2](https://github.com/Pinguladora/imgcull/compare/2e80e94689c8995a5161b8ef9090fe7ac8688373..v0.2.2) - 2026-04-11
 #### Bug Fixes
 - (**ci**) remove cocogitto pre bump hooks - ([b392199](https://github.com/Pinguladora/imgcull/commit/b392199404904bf3fdc8a1eb2d456f60d74b3c3a)) - [@Pinguladora](https://github.com/Pinguladora)
