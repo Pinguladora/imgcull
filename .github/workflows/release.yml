@@ -179,11 +179,8 @@ jobs:
           gh release download "${VERSION}" \
             -R "${GITHUB_REPOSITORY}" \
             -p "imgcull_Linux_x86_64_v3.tar.gz" \
-            -p "imgcull_Linux_x86_64_v3.tar.gz.sigstore.json" \
             -p "imgcull-fips_Linux_x86_64_v3.tar.gz" \
-            -p "imgcull-fips_Linux_x86_64_v3.tar.gz.sigstore.json" \
             -p "imgcull_Windows_x86_64_v3.zip" \
-            -p "imgcull_Windows_x86_64_v3.zip.sigstore.json" \
             -p "checksums.txt" \
             -p "checksums.txt.sigstore.json"
       - name: Download binary provenance

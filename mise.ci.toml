@@ -31,10 +31,10 @@ set -euo pipefail
 ARCHIVE="{{arg(i=0, name="archive")}}"
 sha256sum --check --ignore-missing checksums.txt
 cosign verify-blob \
-  --bundle "${ARCHIVE}.sigstore.json" \
+  --bundle checksums.txt.sigstore.json \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp "^https://github.com/Pinguladora/imgcull/" \
-  "${ARCHIVE}"
+  checksums.txt
 slsa-verifier verify-artifact \
   --provenance-path provenance-binaries.intoto.jsonl \
   --source-uri github.com/Pinguladora/imgcull \
