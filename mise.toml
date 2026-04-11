@@ -1,4 +1,5 @@
 [tools]
+cocogitto = "6.5.0"
 go = "1.26.2"
 golangci-lint = "2.11.4"
 goreleaser = "2.15.2"
@@ -37,3 +38,7 @@ go build -tags=pprof -o imgcull-pprof ./cmd/imgcull
 echo "Run ./imgcull-pprof with a representative workload, then:"
 echo "  curl -sS http://localhost:6060/debug/pprof/profile?seconds=30 -o cmd/imgcull/default.pgo"
 """
+
+[tasks.bump]
+description = "Calculate next version from conventional commits and tag"
+run = "cog bump --auto"
