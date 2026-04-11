@@ -41,5 +41,19 @@ hooks = [
     ],
     stages = ["commit-msg"],
     pass_filenames = true
+  },
+  {
+    id = "pin-github-actions",
+    name = "Pinact update GHA",
+    language = "system",
+    entry = "pinact",
+    args = [
+        "run",
+        "-u",
+        "--min-age",
+        "7"
+    ],
+    stages = ["pre-push"],
+    pass_filenames = false
   }
 ]

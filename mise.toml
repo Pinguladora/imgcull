@@ -1,8 +1,12 @@
+[settings]
+disable_backends = ["asdf", "vfox", "ubi"]
+
 [tools]
 cocogitto = "6.5.0"
 go = "1.26.2"
 golangci-lint = "2.11.4"
 goreleaser = "2.15.2"
+pinact = "3.9.0"
 prek = "0.3.8"
 syft = "1.42.1"
 upx = "5.1.1"
