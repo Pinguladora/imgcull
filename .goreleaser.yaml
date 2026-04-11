@@ -41,6 +41,41 @@ builds:
     # only runs on actual tags/releases
     skip: "{{ .IsSnapshot }}"
 
+  - id: production-fips
+    main: ./cmd/imgcull
+    binary: imgcull-fips-{{ .Os}}-{{ .Arch }}
+    env:
+      - CGO_ENABLED=0
+      - GOFIPS140=v1.26.0
+    flags:
+      - -trimpath # Removes local system paths
+      - -buildvcs=false # Removes dependency on the local .git state
+    ldflags:
+      - -s -w # Strips debug info
+      - -buildid= # Zeroes out the build ID for hash parity
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.CommitDate}} # Use CommitDate, NOT current time
+      - -extldflags="-static"
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
+    goamd64:
+      - v4
+    goarm64:
+      - v9.0
+    ignore:
+      - goos: windows
+        goarch: arm64
+    # only runs on actual tags/releases
+    skip: "{{ .IsSnapshot }}"
+
   - id: dev
     main: ./cmd/imgcull
     binary: imgcull-{{ .Os}}-{{ .Arch }}
@@ -71,11 +106,42 @@ builds:
     # only runs on snapshot builds
     skip: "{{ not .IsSnapshot }}"
 
+  - id: dev-fips
+    main: ./cmd/imgcull
+    binary: imgcull-fips-{{ .Os}}-{{ .Arch }}
+    env:
+      - CGO_ENABLED=0
+      - GOFIPS140=v1.26.0
+    flags:
+      - -tags=dev
+    gcflags:
+      - all=-N -l # Disable optimizations and inlining for better debugging
+    ldflags:
+      - -X main.version={{.Version}}-dev
+      - -extldflags="-static"
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
+    goamd64:
+      - v4
+    goarm64:
+      - v9.0
+    ignore:
+      - goos: windows
+        goarch: arm64
+    # only runs on snapshot builds
+    skip: "{{ not .IsSnapshot }}"
+
 report_sizes: true
 
 upx:
-  - ids: ["production"] # Only compress production builds
-    enabled: true
+  - ids: ["production", "production-fips"] # Only compress production builds
+    enabled: false # Off by default as it breaks SLSA provenance
     compress: best
     lzma: true
     goos: [linux] # Skip 'darwin' (macOS) to avoid signing issues and Windows to avoid antivirus false positives
@@ -94,13 +160,10 @@ kos:
     tags:
       - latest
       - "{{.Tag}}"
-
     platforms:
       - linux/amd64
       - linux/arm64
-
     sbom: spdx
-
     # Set internal file times to Unix Epoch for bit-for-bit parity
     creation_time: "{{.CommitTimestamp}}"
     ko_data_creation_time: "{{.CommitTimestamp}}"
@@ -188,7 +251,6 @@ signs:
       - "--timestamp-server-url=http://freetsa.org/tsr"
       - "--yes"
     output: true
-
 docker_signs:
   - id: keyless-image-sign
     artifacts: all
