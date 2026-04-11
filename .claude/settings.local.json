@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk git:*)",
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "mcp__plugin_context-mode_context-mode__ctx_execute",
+      "Bash(rtk goreleaser:*)",
+      "Bash(mise tasks:*)",
+      "Bash(actionlint .github/workflows/release.yml)",
+      "Bash(zizmor --config .github/zizmor.yml .github/workflows/release.yml)",
+      "Bash(zizmor --config .github/zizmor.yml .github/workflows/)",
+      "Bash(zizmor --config .github/zizmor.yml --pedantic .github/workflows/)",
+      "Bash(MISE_ENV=ci mise tasks)",
+      "Bash(rtk go:*)",
+      "Bash(rtk gh:*)"
+    ]
+  }
+}
