@@ -28,3 +28,11 @@ alias = "snap"
 [tasks.release]
 description = "Production release"
 run = "goreleaser release --clean"
+
+[tasks.pgo-collect]
+description = "Build with pprof and collect a 30s CPU profile"
+run = """
+go build -tags=pprof -o imgcull-pprof ./cmd/imgcull
+echo "Run ./imgcull-pprof with a representative workload, then:"
+echo "  curl -sS http://localhost:6060/debug/pprof/profile?seconds=30 -o cmd/imgcull/default.pgo"
+"""
