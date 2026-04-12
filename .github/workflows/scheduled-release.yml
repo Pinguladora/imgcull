@@ -31,7 +31,7 @@ jobs:
           filter: "blob:none"
       - name: Obtain release token
         id: octo-sts
-        uses: octo-sts/action@6e01d0a37b9b003e96a0e4aab6b4e19be5876883 # v1.0.0
+        uses: octo-sts/action@f603d3be9d8dd9871a265776e625a27b00effe05 # v1.1.1
         with:
           scope: Pinguladora/imgcull
           identity: scheduled-release
