@@ -1,0 +1,42 @@
+name: Scheduled Release
+
+on:
+  schedule:
+    - cron: "0 9 1 * *" # 1st of each month at 09:00 UTC
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  check-and-bump:
+    name: Check for unreleased commits and bump
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # Push version tag
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+          disable-telemetry: "true"
+          disable-sudo: "true"
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          filter: "blob:none"
+      - name: Set up mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          install: true
+          cache: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check for unreleased commits and bump
+        run: mise run release:check && mise run bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -56,5 +56,23 @@ slsa-verifier verify-image \
   "${IMAGE_REF}"
 """
 
+[tasks."release:check"]
+description = "Check for unreleased commits since last tag"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+if [ -z "$LAST_TAG" ]; then
+  echo "No tags found, first release"
+  exit 0
+fi
+COMMITS=$(git rev-list "${LAST_TAG}..HEAD" --count)
+if [ "$COMMITS" -eq 0 ]; then
+  echo "No unreleased commits since ${LAST_TAG}"
+  exit 1
+fi
+echo "${COMMITS} unreleased commits since ${LAST_TAG}"
+"""
+
 [tools]
 "aqua:slsa-verifier" = "2.7.1"
