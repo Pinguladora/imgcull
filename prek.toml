@@ -43,6 +43,15 @@ hooks = [
     pass_filenames = true
   },
   {
+    id = "go-test",
+    name = "Go tests",
+    language = "system",
+    entry = "mise",
+    args = ["run", "test"],
+    stages = ["pre-push"],
+    pass_filenames = false
+  },
+  {
     id = "pin-github-actions",
     name = "Pinact update GHA",
     language = "system",

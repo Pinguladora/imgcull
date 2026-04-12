@@ -43,6 +43,25 @@ echo "Run ./imgcull-pprof with a representative workload, then:"
 echo "  curl -sS http://localhost:6060/debug/pprof/profile?seconds=30 -o cmd/imgcull/default.pgo"
 """
 
+[tasks.test]
+description = "Run all tests"
+run = "go test ./..."
+alias = "t"
+sources = ["**/*.go", "go.mod", "go.sum"]
+
+[tasks."test:verbose"]
+description = "Run all tests with verbose output"
+run = "go test ./... -v"
+alias = "tv"
+sources = ["**/*.go", "go.mod", "go.sum"]
+
+[tasks."test:coverage"]
+description = "Run tests with coverage report"
+run = "go test ./... -coverprofile=coverage.out && go tool cover -func=coverage.out"
+alias = "tc"
+sources = ["**/*.go", "go.mod", "go.sum"]
+outputs = ["coverage.out"]
+
 [tasks.bump]
 description = "Calculate next version from conventional commits and tag"
 run = "cog bump --auto"
