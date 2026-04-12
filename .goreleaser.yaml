@@ -182,10 +182,10 @@ kos:
     build: production-fips
     bare: true
     repositories:
-      - ghcr.io/pinguladora/imgcull
+      - ghcr.io/pinguladora/imgcull-fips
     user: "65532:65532"
     tags:
-      - "{{.Tag}}-fips"
+      - "{{.Tag}}"
     platforms:
       - linux/amd64
       - linux/arm64
