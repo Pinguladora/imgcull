@@ -9,11 +9,7 @@ before:
 builds:
   - id: production
     main: ./cmd/imgcull
-    binary: >-
-      imgcull-{{ .Os }}-
-      {{- .Arch }}
-      {{- with .Amd64 }}-{{ . }}{{ end }}
-      {{- with .Arm64 }}-{{ . }}{{ end }}
+    binary: imgcull
     env:
       - CGO_ENABLED=0
     flags:
@@ -45,11 +41,7 @@ builds:
 
   - id: production-fips
     main: ./cmd/imgcull
-    binary: >-
-      imgcull-fips-{{ .Os }}-
-      {{- .Arch }}
-      {{- with .Amd64 }}-{{ . }}{{ end }}
-      {{- with .Arm64 }}-{{ . }}{{ end }}
+    binary: imgcull-fips
     env:
       - CGO_ENABLED=0
       - GOFIPS140=v1.26.0
@@ -82,11 +74,7 @@ builds:
 
   - id: dev
     main: ./cmd/imgcull
-    binary: >-
-      imgcull-{{ .Os }}-
-      {{- .Arch }}
-      {{- with .Amd64 }}-{{ . }}{{ end }}
-      {{- with .Arm64 }}-{{ . }}{{ end }}
+    binary: imgcull
     env:
       - CGO_ENABLED=0
     flags:
@@ -114,11 +102,7 @@ builds:
 
   - id: dev-fips
     main: ./cmd/imgcull
-    binary: >-
-      imgcull-fips-{{ .Os }}-
-      {{- .Arch }}
-      {{- with .Amd64 }}-{{ . }}{{ end }}
-      {{- with .Arm64 }}-{{ . }}{{ end }}
+    binary: imgcull-fips
     env:
       - CGO_ENABLED=0
       - GOFIPS140=v1.26.0
