@@ -39,3 +39,6 @@ dist/
 # Mise local env
 mise.local.toml
 mise.local.lock
+
+# AI
+.claude
