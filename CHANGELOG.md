@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.3.0](https://github.com/Pinguladora/imgcull/compare/e4095c091344f62a137fb7d65c2ed0948cc4f4fc..v0.3.0) - 2026-04-12
+#### Features
+- (**ci**) split fips into another package repo - ([e4095c0](https://github.com/Pinguladora/imgcull/commit/e4095c091344f62a137fb7d65c2ed0948cc4f4fc)) - [@Pinguladora](https://github.com/Pinguladora)
+
+- - -
+
 ## [v0.2.7](https://github.com/Pinguladora/imgcull/compare/a342e819fe1715bd01d333e08e0cf80bbd06745d..v0.2.7) - 2026-04-12
 #### Bug Fixes
 - (**ci**) pass digest for inmutable reference for SLSA provenance - ([a342e81](https://github.com/Pinguladora/imgcull/commit/a342e819fe1715bd01d333e08e0cf80bbd06745d)) - [@Pinguladora](https://github.com/Pinguladora)
