@@ -195,11 +195,11 @@ jobs:
         run: mise run verify:binary imgcull_Windows_x86_64_v3.zip
       - name: Verify container image
         env:
-          TAG: ${{ github.ref_name }}
           IMAGE: ${{ needs.release.outputs.image }}
-        run: mise run verify:image "${IMAGE}:${TAG}"
+          DIGEST: ${{ needs.release.outputs.digest }}
+        run: mise run verify:image "${IMAGE}@${DIGEST}"
       - name: Verify FIPS container image
         env:
-          TAG: "${{ github.ref_name }}-fips"
           IMAGE: ${{ needs.release.outputs.image-fips }}
-        run: mise run verify:image "${IMAGE}:${TAG}"
+          DIGEST: ${{ needs.release.outputs.digest-fips }}
+        run: mise run verify:image "${IMAGE}@${DIGEST}"

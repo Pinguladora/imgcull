@@ -163,6 +163,7 @@ kos:
   # Production performance tier for container/cluster workloads
   - id: imgcull-image
     build: production
+    bare: true
     repositories:
       - ghcr.io/pinguladora/imgcull
     user: "65532:65532"
@@ -179,6 +180,7 @@ kos:
   # FIPS compliance for container/cluster workloads
   - id: imgcull-image-fips
     build: production-fips
+    bare: true
     repositories:
       - ghcr.io/pinguladora/imgcull
     user: "65532:65532"
