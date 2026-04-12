@@ -40,10 +40,3 @@ url = "https://github.com/slsa-framework/slsa-verifier/releases/download/v2.7.1/
 
 [tools."aqua:slsa-verifier"."platforms.windows-x64".provenance.slsa]
 url = "https://github.com/slsa-framework/slsa-verifier/releases/download/v2.7.1/slsa-verifier-windows-amd64.exe.intoto.jsonl"
-
-[[tools.slsa-verifier]]
-version = "2.7.1"
-backend = "ubi:slsa-framework/slsa-verifier"
-
-[tools.slsa-verifier."platforms.windows-x64-slsa-verifier.exe"]
-checksum = "blake3:5491a14db54b281d5c277f5704ef296c224486bb862a8b9884722b92fed6a1d5"
