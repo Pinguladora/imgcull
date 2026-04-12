@@ -107,7 +107,7 @@ func run() error {
 	runtimeFlag := flag.String("runtime", defaultRuntime, "runtime to use: podman|docker|nerdctl")
 	maxUnused := flag.String("max-unused-bytes", defaultMaxUnused, "max allowed unused image bytes before GC (eg. 20G)")
 	poll := flag.Int("poll-interval", defaultPollIntervalSec, "seconds between reconciliation runs")
-	dbPath := flag.String("db-path", defaultRuntime+"_defaultDbPath", "path to bolt DB (eg. docker_imgcull.db)")
+	dbPath := flag.String("db-path", defaultRuntime+"_"+defaultDbPath, "path to bolt DB (eg. docker_imgcull.db)")
 	keepLabel := flag.String("keep-label", defaultKeepLabel, "label name that prevents deletion")
 	dry := flag.Bool("dry-run", defaultDryRun, "don't actually delete images")
 	minAge := flag.Int("min-age-hours", defaultMinAgeHours, "min image age before deletion (hours)")
