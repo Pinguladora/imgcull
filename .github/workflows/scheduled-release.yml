@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write # Push version tag
+      id-token: write # octo-sts OIDC exchange
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
@@ -29,14 +29,25 @@ jobs:
         with:
           fetch-depth: 0
           filter: "blob:none"
+      - name: Obtain release token
+        id: octo-sts
+        uses: octo-sts/action@6e01d0a37b9b003e96a0e4aab6b4e19be5876883 # v1.0.0
+        with:
+          scope: Pinguladora/imgcull
+          identity: scheduled-release
+      - name: Configure git credentials
+        env:
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
+        run: |
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/Pinguladora/imgcull.git"
       - name: Set up mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           install: true
           cache: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.octo-sts.outputs.token }}
       - name: Check for unreleased commits and bump
         run: mise run release:check && mise run bump
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.octo-sts.outputs.token }}

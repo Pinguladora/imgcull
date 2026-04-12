@@ -16,9 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write # GitHub Releases upload
-      packages: write # GHCR push (KO images)
-      id-token: write # Cosign keyless signing (OIDC)
+      id-token: write # octo-sts OIDC exchange + cosign keyless signing
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
       image: ${{ steps.digests.outputs.image }}
@@ -42,13 +40,19 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
           filter: "blob:none"
+      - name: Obtain release token
+        id: octo-sts
+        uses: octo-sts/action@6e01d0a37b9b003e96a0e4aab6b4e19be5876883 # v1.0.0
+        with:
+          scope: Pinguladora/imgcull
+          identity: release
       - name: Set up mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           install: true
           cache: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.octo-sts.outputs.token }}
           MISE_ENV: ci
       - name: Install cosign
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
@@ -57,11 +61,11 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ steps.octo-sts.outputs.token }}
       - name: Run release
         run: mise run release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.octo-sts.outputs.token }}
       - name: Generate subject hashes for SLSA provenance
         id: hash
         run: |
@@ -135,8 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read # Download release artifacts
-      packages: read # Pull container images from GHCR
+      id-token: write # octo-sts OIDC exchange
       actions: read # Download provenance workflow artifacts
     steps:
       - name: Harden Runner
@@ -149,13 +152,19 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+      - name: Obtain verify token
+        id: octo-sts
+        uses: octo-sts/action@6e01d0a37b9b003e96a0e4aab6b4e19be5876883 # v1.0.0
+        with:
+          scope: Pinguladora/imgcull
+          identity: verify
       - name: Set up mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           install: true
           cache: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.octo-sts.outputs.token }}
           MISE_ENV: ci
       - name: Install cosign
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
@@ -164,10 +173,10 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ steps.octo-sts.outputs.token }}
       - name: Download release artifacts for verification
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
         run: |
           VERSION="${GITHUB_REF_NAME}"
           gh release download "${VERSION}" \
