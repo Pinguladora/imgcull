@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.7](https://github.com/Pinguladora/imgcull/compare/a342e819fe1715bd01d333e08e0cf80bbd06745d..v0.2.7) - 2026-04-12
+#### Bug Fixes
+- (**ci**) pass digest for inmutable reference for SLSA provenance - ([a342e81](https://github.com/Pinguladora/imgcull/commit/a342e819fe1715bd01d333e08e0cf80bbd06745d)) - [@Pinguladora](https://github.com/Pinguladora)
+
+- - -
+
 ## [v0.2.6](https://github.com/Pinguladora/imgcull/compare/159a85106a52eb2ad8ff34b18b8325dc0952acc9..v0.2.6) - 2026-04-12
 #### Bug Fixes
 - (**ci**) remove unneeded verifications - ([159a851](https://github.com/Pinguladora/imgcull/commit/159a85106a52eb2ad8ff34b18b8325dc0952acc9)) - [@Pinguladora](https://github.com/Pinguladora)
