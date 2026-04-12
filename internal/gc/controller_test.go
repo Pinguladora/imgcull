@@ -169,3 +169,123 @@ func TestHasKeepLabel(t *testing.T) {
 		})
 	}
 }
+
+func TestComputeUnused_Fallback_NoLayers(t *testing.T) {
+	ctrl := &Controller{}
+	imgs := []runtime.Image{
+		{ID: "used1", Size: 500},
+		{ID: "unused1", Size: 300},
+		{ID: "unused2", Size: 200},
+	}
+	used := map[string]struct{}{"used1": {}}
+	allMeta := map[string]db.ImageMeta{
+		"used1":   {Size: 500},
+		"unused1": {Size: 300},
+		"unused2": {Size: 200},
+	}
+
+	rawSizes, effectiveSizes, unusedTotal := ctrl.computeUnused(imgs, used, allMeta)
+
+	if rawSizes["unused1"] != 300 {
+		t.Errorf("rawSizes[unused1] = %d, want 300", rawSizes["unused1"])
+	}
+	if effectiveSizes["unused1"] != 300 {
+		t.Errorf("effectiveSizes[unused1] = %d, want 300 (no layers = fallback)", effectiveSizes["unused1"])
+	}
+	if unusedTotal != 500 {
+		t.Errorf("unusedTotal = %d, want 500", unusedTotal)
+	}
+}
+
+func TestComputeUnused_LayerAware(t *testing.T) {
+	ctrl := &Controller{}
+
+	imgs := []runtime.Image{
+		{ID: "used1", Size: 300_000_000},
+		{ID: "unused1", Size: 300_000_000},
+		{ID: "unused2", Size: 300_000_000},
+	}
+	used := map[string]struct{}{"used1": {}}
+
+	allMeta := map[string]db.ImageMeta{
+		"used1": {
+			Size:   300_000_000,
+			Layers: []string{"layerA", "layerB", "layerC"},
+		},
+		"unused1": {
+			Size:   300_000_000,
+			Layers: []string{"layerA", "layerB", "layerD"},
+		},
+		"unused2": {
+			Size:   300_000_000,
+			Layers: []string{"layerE", "layerF"},
+		},
+	}
+
+	rawSizes, effectiveSizes, unusedTotal := ctrl.computeUnused(imgs, used, allMeta)
+
+	// unused1: 3 layers, layerA and layerB shared with used1, layerD unique
+	// uniqueRatio = 1/3, effectiveSize = 300M * 1/3 = 100M
+	wantEff1 := int64(float64(300_000_000) * 1.0 / 3.0)
+	if effectiveSizes["unused1"] != wantEff1 {
+		t.Errorf("effectiveSizes[unused1] = %d, want %d", effectiveSizes["unused1"], wantEff1)
+	}
+
+	// unused2: 2 layers, both unique (not shared with any used image)
+	// uniqueRatio = 2/2 = 1.0, effectiveSize = 300M
+	if effectiveSizes["unused2"] != 300_000_000 {
+		t.Errorf("effectiveSizes[unused2] = %d, want 300000000", effectiveSizes["unused2"])
+	}
+
+	// Raw sizes unchanged
+	if rawSizes["unused1"] != 300_000_000 {
+		t.Errorf("rawSizes[unused1] = %d, want 300000000", rawSizes["unused1"])
+	}
+
+	// unusedTotal = 100M + 300M = 400M
+	wantTotal := wantEff1 + 300_000_000
+	if unusedTotal != wantTotal {
+		t.Errorf("unusedTotal = %d, want %d", unusedTotal, wantTotal)
+	}
+}
+
+func TestComputeUnused_MixedLayersAndNoLayers(t *testing.T) {
+	ctrl := &Controller{}
+
+	imgs := []runtime.Image{
+		{ID: "used1", Size: 100},
+		{ID: "unused1", Size: 400},
+		{ID: "unused2", Size: 200},
+	}
+	used := map[string]struct{}{"used1": {}}
+
+	allMeta := map[string]db.ImageMeta{
+		"used1": {
+			Size:   100,
+			Layers: []string{"layerA"},
+		},
+		"unused1": {
+			Size:   400,
+			Layers: []string{"layerA", "layerB"},
+		},
+		"unused2": {
+			Size: 200,
+			// No layers: runtime didn't return them
+		},
+	}
+
+	_, effectiveSizes, unusedTotal := ctrl.computeUnused(imgs, used, allMeta)
+
+	// unused1: 2 layers, layerA shared, layerB unique. ratio=1/2. effective=200
+	if effectiveSizes["unused1"] != 200 {
+		t.Errorf("effectiveSizes[unused1] = %d, want 200", effectiveSizes["unused1"])
+	}
+	// unused2: no layers, fallback to full size
+	if effectiveSizes["unused2"] != 200 {
+		t.Errorf("effectiveSizes[unused2] = %d, want 200 (fallback)", effectiveSizes["unused2"])
+	}
+	// total = 200 + 200 = 400
+	if unusedTotal != 400 {
+		t.Errorf("unusedTotal = %d, want 400", unusedTotal)
+	}
+}

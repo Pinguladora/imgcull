@@ -124,15 +124,15 @@ func (c *Controller) reconcile(ctx context.Context) {
 	}
 	used := buildUsedSet(containers)
 
-	imageSizes, unusedTotal := c.computeUnused(imgs, used)
-	log.Info().Int64("unused_bytes", unusedTotal).Msg("unused computed")
-	if unusedTotal <= c.maxUnused {
-		return
-	}
-
 	allMeta, err := c.db.GetAll()
 	if err != nil {
 		log.Error().Err(err).Msg("db read failed")
+		return
+	}
+
+	rawSizes, effectiveSizes, unusedTotal := c.computeUnused(imgs, used, allMeta)
+	log.Info().Int64("unused_bytes", unusedTotal).Msg("unused computed (layer-aware)")
+	if unusedTotal <= c.maxUnused {
 		return
 	}
 
@@ -142,7 +142,7 @@ func (c *Controller) reconcile(ctx context.Context) {
 
 	ordered := partitionByUniqueLayers(cands, imgLayers, layerRef)
 
-	c.performDeletions(ctx, ordered, imageSizes, allMeta, unusedTotal)
+	c.performDeletions(ctx, ordered, rawSizes, effectiveSizes, allMeta, unusedTotal)
 
 	log.Info().Msg("reconcile finished")
 }
@@ -167,16 +167,43 @@ func buildUsedSet(containers []runtime.Container) map[string]struct{} {
 	return used
 }
 
-func (c *Controller) computeUnused(imgs []runtime.Image, used map[string]struct{}) (map[string]int64, int64) {
-	imageSizes := map[string]int64{}
-	unusedTotal := int64(0)
-	for _, img := range imgs {
-		imageSizes[img.ID] = img.Size
-		if _, ok := used[img.ID]; !ok {
-			unusedTotal += img.Size
+func (c *Controller) computeUnused(imgs []runtime.Image, used map[string]struct{}, allMeta map[string]db.ImageMeta) (rawSizes, effectiveSizes map[string]int64, unusedTotal int64) {
+	rawSizes = make(map[string]int64, len(imgs))
+	effectiveSizes = make(map[string]int64, len(imgs))
+
+	usedLayers := map[string]struct{}{}
+	for id := range used {
+		if m, ok := allMeta[id]; ok {
+			for _, l := range m.Layers {
+				usedLayers[l] = struct{}{}
+			}
 		}
 	}
-	return imageSizes, unusedTotal
+
+	for _, img := range imgs {
+		rawSizes[img.ID] = img.Size
+		if _, ok := used[img.ID]; ok {
+			continue
+		}
+
+		m, ok := allMeta[img.ID]
+		if !ok || len(m.Layers) == 0 {
+			effectiveSizes[img.ID] = img.Size
+			unusedTotal += img.Size
+			continue
+		}
+
+		unique := 0
+		for _, l := range m.Layers {
+			if _, shared := usedLayers[l]; !shared {
+				unique++
+			}
+		}
+		eff := int64(float64(img.Size) * float64(unique) / float64(len(m.Layers)))
+		effectiveSizes[img.ID] = eff
+		unusedTotal += eff
+	}
+	return
 }
 
 func buildLayerMaps(allMeta map[string]db.ImageMeta) (map[string]int, map[string][]string) {
@@ -239,7 +266,7 @@ func hasUniqueLayer(layers []string, layerRef map[string]int) bool {
 func (c *Controller) performDeletions(
 	ctx context.Context,
 	ordered []candidate,
-	imageSizes map[string]int64,
+	rawSizes, effectiveSizes map[string]int64,
 	allMeta map[string]db.ImageMeta,
 	unusedTotal int64,
 ) {
@@ -250,7 +277,7 @@ func (c *Controller) performDeletions(
 			log.Info().Int("deleted", deleted).Msg("chunk limit reached")
 			break
 		}
-		sz, ok := imageSizes[x.id]
+		rawSz, ok := rawSizes[x.id]
 		if !ok {
 			_ = c.db.Remove(x.id)
 			continue
@@ -261,13 +288,14 @@ func (c *Controller) performDeletions(
 				continue
 			}
 		}
+		effSz := effectiveSizes[x.id]
 		if c.dry {
-			c.logDryRun(x.id, x.display, sz)
+			c.logDryRun(x.id, x.display, rawSz)
 			deleted++
-			freed += sz
-		} else if c.deleteImage(ctx, x.id, x.display, sz) {
+			freed += effSz
+		} else if c.deleteImage(ctx, x.id, x.display, rawSz) {
 			deleted++
-			freed += sz
+			freed += effSz
 		}
 		if unusedTotal-freed <= c.maxUnused {
 			break
