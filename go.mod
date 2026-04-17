@@ -3,7 +3,7 @@ module github.com/pinguladora/imgcull
 go 1.26.1
 
 require (
-	github.com/rs/zerolog v1.34.0
+	github.com/rs/zerolog v1.35.0
 	go.etcd.io/bbolt v1.4.3
 )
 
