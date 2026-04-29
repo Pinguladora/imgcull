@@ -8,7 +8,7 @@ golangci-lint = "2.11.4"
 goreleaser = "2.15.2"
 pinact = "3.9.0"
 prek = "0.3.8"
-syft = "1.42.1"
+syft = "1.42.4"
 upx = "5.1.1"
 
 [tasks."lint:golangci-lint"]
