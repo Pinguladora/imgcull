@@ -171,11 +171,25 @@ func (c *Controller) computeUnused(imgs []runtime.Image, used map[string]struct{
 	rawSizes = make(map[string]int64, len(imgs))
 	effectiveSizes = make(map[string]int64, len(imgs))
 
+	// Build usedLayers: layers pinned by running containers
 	usedLayers := map[string]struct{}{}
 	for id := range used {
 		if m, ok := allMeta[id]; ok {
 			for _, l := range m.Layers {
 				usedLayers[l] = struct{}{}
+			}
+		}
+	}
+
+	// Build layerCounts: count occurrences of each layer across candidate images
+	layerCounts := map[string]int{}
+	for _, img := range imgs {
+		if _, ok := used[img.ID]; ok {
+			continue // skip images in use
+		}
+		if m, ok := allMeta[img.ID]; ok {
+			for _, l := range m.Layers {
+				layerCounts[l]++
 			}
 		}
 	}
@@ -193,13 +207,17 @@ func (c *Controller) computeUnused(imgs []runtime.Image, used map[string]struct{
 			continue
 		}
 
-		unique := 0
+		// Compute effective size using per-layer splitting
+		var effSize float64
 		for _, l := range m.Layers {
-			if _, shared := usedLayers[l]; !shared {
-				unique++
+			if _, pinned := usedLayers[l]; pinned {
+				continue // skip layers pinned by running containers
 			}
+			// Split layer contribution by number of candidates sharing it
+			layerShare := (float64(img.Size) / float64(len(m.Layers))) / float64(layerCounts[l])
+			effSize += layerShare
 		}
-		eff := int64(float64(img.Size) * float64(unique) / float64(len(m.Layers)))
+		eff := int64(effSize)
 		effectiveSizes[img.ID] = eff
 		unusedTotal += eff
 	}

@@ -70,6 +70,15 @@ func TestParseImages(t *testing.T) {
 				}
 				if len(got[i].RepoTags) != len(tt.want[i].RepoTags) {
 					t.Errorf("[%d] RepoTags len = %d, want %d", i, len(got[i].RepoTags), len(tt.want[i].RepoTags))
+				} else {
+					// Compare tag contents element-by-element
+					for j := range got[i].RepoTags {
+						if got[i].RepoTags[j] != tt.want[i].RepoTags[j] {
+							t.Errorf("[%d] RepoTags[%d] = %q, want %q (got: %v, want: %v)",
+								i, j, got[i].RepoTags[j], tt.want[i].RepoTags[j],
+								got[i].RepoTags, tt.want[i].RepoTags)
+						}
+					}
 				}
 			}
 		})

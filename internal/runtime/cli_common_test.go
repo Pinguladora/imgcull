@@ -93,15 +93,15 @@ func TestToString(t *testing.T) {
 
 func TestToInt64(t *testing.T) {
 	tests := []struct {
-		name  string
 		input any
+		name  string
 		want  int64
 	}{
-		{"float64", float64(42), 42},
-		{"int", int(10), 10},
-		{"int64", int64(99), 99},
-		{"nil", nil, 0},
-		{"string", "nope", 0},
+		{float64(42), "float64", 42},
+		{int(10), "int", 10},
+		{int64(99), "int64", 99},
+		{nil, "nil", 0},
+		{"nope", "string", 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,16 +134,16 @@ func TestParseTimeRFC3339(t *testing.T) {
 
 func TestUnmarshalRepoTags(t *testing.T) {
 	tests := []struct {
-		name  string
 		input any
+		name  string
 		want  int
 	}{
-		{"nil", nil, 0},
-		{"slice of any", []any{"nginx:latest", "nginx:1.25"}, 2},
-		{"string slice", []string{"alpine:3.19"}, 1},
-		{"single string", "busybox:latest", 1},
-		{"json string", `["a:1","b:2"]`, 2},
-		{"empty string", "", 0},
+		{nil, "nil", 0},
+		{[]any{"nginx:latest", "nginx:1.25"}, "slice of any", 2},
+		{[]string{"alpine:3.19"}, "string slice", 1},
+		{"busybox:latest", "single string", 1},
+		{`["a:1","b:2"]`, "json string", 2},
+		{"", "empty string", 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
