@@ -203,89 +203,89 @@ url_api = "https://api.github.com/repos/suzuki-shunsuke/pinact/releases/assets/4
 provenance = "github-attestations"
 
 [[tools.prek]]
-version = "0.4.12"
+version = "0.4.13"
 backend = "aqua:j178/prek"
 
 [tools.prek."platforms.linux-arm64"]
-checksum = "sha256:a39af72adf09a8df4e1d96bd2daa5b537bf3204dee87457eaeece06cd23dda31"
-url = "https://github.com/j178/prek/releases/download/v0.4.12/prek-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/j178/prek/releases/assets/499978733"
+checksum = "sha256:08ee04c20f3738356a5c2631a09d1d370c94093f28b3ad0857d0757e34d51860"
+url = "https://github.com/j178/prek/releases/download/v0.4.13/prek-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/j178/prek/releases/assets/508529757"
 provenance = "github-attestations"
 
 [tools.prek."platforms.linux-arm64-musl"]
-checksum = "sha256:f3be7601f991e05f161023d231198d966ea2afdb6bc6dd15d253d751674d6ab1"
-url = "https://github.com/j178/prek/releases/download/v0.4.12/prek-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/j178/prek/releases/assets/499978731"
+checksum = "sha256:ecbddcf4aad45eca7073f62dcea717f1e523901ada5c2fd668e6dce812f7790e"
+url = "https://github.com/j178/prek/releases/download/v0.4.13/prek-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/j178/prek/releases/assets/508529763"
 provenance = "github-attestations"
 
 [tools.prek."platforms.linux-x64"]
-checksum = "sha256:f2476eae75463f96dd26c78466c4e8f42031ff99214abf3d208f1cf04a0e4ddf"
-url = "https://github.com/j178/prek/releases/download/v0.4.12/prek-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/j178/prek/releases/assets/499978786"
+checksum = "sha256:db31d0c5be937602002ab21e70ebf07c6566cc4428c9095f04fa546e12e7ccb0"
+url = "https://github.com/j178/prek/releases/download/v0.4.13/prek-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/j178/prek/releases/assets/508529827"
 provenance = "github-attestations"
 
 [tools.prek."platforms.linux-x64-musl"]
-checksum = "sha256:3321ec6e4d873fbf41bef55d11b3f269fa91cbb87b19f18211df7c1bd061ac8a"
-url = "https://github.com/j178/prek/releases/download/v0.4.12/prek-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/j178/prek/releases/assets/499978791"
+checksum = "sha256:15dbf93535fc956a09e0e13e0529f364aff94c9d048f36a41571bb802e096ec0"
+url = "https://github.com/j178/prek/releases/download/v0.4.13/prek-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/j178/prek/releases/assets/508529829"
 provenance = "github-attestations"
 
 [tools.prek."platforms.macos-arm64"]
-checksum = "sha256:cef66b9641a1c9ac61518edb13c2a7b440f3f1748e4bd60f2514a82bc1f2bd30"
-url = "https://github.com/j178/prek/releases/download/v0.4.12/prek-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/j178/prek/releases/assets/499978720"
+checksum = "sha256:776da7aa143b3cb11125f9c6f44ab5af157c176c992b7bfbafc1b155a44ac769"
+url = "https://github.com/j178/prek/releases/download/v0.4.13/prek-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/j178/prek/releases/assets/508529745"
 provenance = "github-attestations"
 
 [tools.prek."platforms.macos-x64"]
-checksum = "sha256:783bf6b8d036e80cd43dd7c037d0888648c249f9c3c6045f0dd6eb135e11556e"
-url = "https://github.com/j178/prek/releases/download/v0.4.12/prek-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/j178/prek/releases/assets/499978780"
+checksum = "sha256:dbd9dbe4f1e0142a3d264c84fbc1e0b1816392507c617cc71d971c8fdde9d506"
+url = "https://github.com/j178/prek/releases/download/v0.4.13/prek-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/j178/prek/releases/assets/508529818"
 provenance = "github-attestations"
 
 [tools.prek."platforms.windows-x64"]
-checksum = "sha256:1ea049702009636296ca845e91b336aeb203d47df8ce500eb388672c8199d57b"
-url = "https://github.com/j178/prek/releases/download/v0.4.12/prek-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/j178/prek/releases/assets/499978783"
+checksum = "sha256:bf7adf70705a6ba0d2e1fd8a4016397e2609bc1765474eddec466db460a9f4ea"
+url = "https://github.com/j178/prek/releases/download/v0.4.13/prek-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/j178/prek/releases/assets/508529822"
 provenance = "github-attestations"
 
 [[tools.syft]]
-version = "1.50.0"
+version = "1.51.0"
 backend = "aqua:anchore/syft"
 
 [tools.syft."platforms.linux-arm64"]
-checksum = "sha256:887c57cbcc2d0e8c5c110a4571a3fc7150058b24d74f993ee4663516e5c8ce86"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004622"
+checksum = "sha256:6c0466811541ea03add5213a60a1562f0851e4c0b0ecfdee1a694a9455285900"
+url = "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/508878652"
 
 [tools.syft."platforms.linux-arm64-musl"]
-checksum = "sha256:887c57cbcc2d0e8c5c110a4571a3fc7150058b24d74f993ee4663516e5c8ce86"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004622"
+checksum = "sha256:6c0466811541ea03add5213a60a1562f0851e4c0b0ecfdee1a694a9455285900"
+url = "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/508878652"
 
 [tools.syft."platforms.linux-x64"]
-checksum = "sha256:bf7b29ff57f06da30918266a0e1c2885a8f99784798d1bdb1628886aa015d788"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004612"
+checksum = "sha256:2a2e837a2c8d59ec9af5472ee22d3b04ee463c4e44476ecf993fd1e5ab6ebc7f"
+url = "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/508878656"
 
 [tools.syft."platforms.linux-x64-musl"]
-checksum = "sha256:bf7b29ff57f06da30918266a0e1c2885a8f99784798d1bdb1628886aa015d788"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004612"
+checksum = "sha256:2a2e837a2c8d59ec9af5472ee22d3b04ee463c4e44476ecf993fd1e5ab6ebc7f"
+url = "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/508878656"
 
 [tools.syft."platforms.macos-arm64"]
-checksum = "sha256:e32fdb9d47823fa633748a1efca2528fd77c37469ea93c9e40ab835da44e4cce"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004615"
+checksum = "sha256:4f37f4c7fefce0a68e4cf71ba3f5f9829a99e65d89b29f7ee41b8c2c10ea8c59"
+url = "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/508878653"
 
 [tools.syft."platforms.macos-x64"]
-checksum = "sha256:d11a8c7bc27114853bd7c1e1b2f3be3ddda3a1de17aee585329f04c369341c75"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004621"
+checksum = "sha256:cddf9a044145caf0a1a3194d00d1dd51a1666f4814f2919cdb4768a0c062ad95"
+url = "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/508878649"
 
 [tools.syft."platforms.windows-x64"]
-checksum = "sha256:815ee6973ec5dff6a671d7f41b0e78835a8c45b91d5a39f4743ea1cee833d3be"
-url = "https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_windows_amd64.zip"
-url_api = "https://api.github.com/repos/anchore/syft/releases/assets/493004607"
+checksum = "sha256:fc5ffaeffb993576ece9c791da5a688fb2c8969a1479bbfe58583672c64da336"
+url = "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_windows_amd64.zip"
+url_api = "https://api.github.com/repos/anchore/syft/releases/assets/508878657"
 
 [[tools.upx]]
 version = "5.2.0"
