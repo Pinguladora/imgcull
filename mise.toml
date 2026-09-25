@@ -5,10 +5,10 @@ disable_backends = ["asdf", "vfox", "ubi"]
 cocogitto = "6.5.0"
 go = "1.27.1"
 golangci-lint = "2.13.2"
-goreleaser = "2.18.1"
+goreleaser = "2.18.2"
 pinact = "3.10.1"
 prek = "0.5.3"
-syft = "1.51.1"
+syft = "1.52.0"
 upx = "5.2.1"
 
 [tasks."lint:golangci-lint"]
