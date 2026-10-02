@@ -4,7 +4,7 @@ disable_backends = ["asdf", "vfox", "ubi"]
 [tools]
 cocogitto = "6.5.0"
 go = "1.27.1"
-golangci-lint = "2.13.2"
+golangci-lint = "2.14.0"
 goreleaser = "2.18.2"
 pinact = "3.10.1"
 prek = "0.5.3"
