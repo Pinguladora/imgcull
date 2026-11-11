@@ -7,7 +7,7 @@ go = "1.27.3"
 golangci-lint = "2.15.0"
 goreleaser = "2.19.0"
 pinact = "5.0.2"
-prek = "0.5.9"
+prek = "0.5.10"
 syft = "1.56.0"
 upx = "5.3.0"
 
